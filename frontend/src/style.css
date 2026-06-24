@@ -1,0 +1,397 @@
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #111827;
+  color: white;
+  padding: 30px;
+}
+
+h1 {
+
+  text-align: center;
+
+  font-size: 56px;
+
+  color: white;
+
+  margin-bottom: 20px;
+
+}
+
+#anime-list {
+
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      auto-fill,
+      minmax(320px, 1fr)
+    );
+
+  gap: 30px;
+
+  margin-top: 40px;
+}
+
+.card {
+
+  width: 100%;
+
+  min-height: 650px;
+
+  height: auto;
+
+  display: inline-block;
+
+  background: #1f2937;
+
+  border-radius: 12px;
+  background: #1f2937;
+  background-repeat: no-repeat;
+  background-position: center;
+  box-shadow: 0 0 10px rgba(0,0,0,0.3);
+
+  transition: transform 0.3s;
+}
+
+.card h2 {
+  margin-top: 0;
+  color: #60a5fa;
+}
+
+.card p {
+  margin: 8px 0;
+}
+
+.section-title {
+  text-align: center;
+  margin-top: 40px;
+  margin-bottom: 30px;
+}
+
+.featured-card {
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 40px;
+
+  padding: 40px;
+
+  border-radius: 20px;
+
+  margin-bottom: 50px;
+
+  position: relative;
+
+  overflow: hidden;
+
+  background-size: cover;
+
+  background-position: center;
+
+  background-repeat: no-repeat;
+
+  min-height: 350px;
+
+}
+
+.featured-card::before {
+
+  content: "";
+
+  position: absolute;
+
+  inset: 0;
+
+  background: rgba(17, 24, 39, 0.82);
+
+  backdrop-filter: blur(6px);
+
+}
+
+.anime-cover {
+
+  width: 100%;
+
+  height: 450px;
+
+  object-fit: cover;
+
+  border-radius: 12px;
+
+  margin-bottom: 15px;
+
+}
+
+.watch-btn {
+
+  width: 100%;
+
+  background: #2563eb;
+
+  color: white;
+
+  border: none;
+
+  padding: 14px;
+
+  border-radius: 10px;
+
+  font-size: 16px;
+
+  font-weight: bold;
+
+  cursor: pointer;
+
+  margin-top: 15px;
+
+  transition: 0.3s;
+}
+
+.watch-btn:hover {
+
+  background: #3b82f6;
+
+}
+
+#search {
+
+  width: 100%;
+  max-width: 600px;
+
+  display: block;
+
+  margin: 20px auto;
+
+  padding: 15px;
+
+  border: none;
+
+  border-radius: 12px;
+
+  background: #1f2937;
+
+  color: white;
+
+  font-size: 16px;
+}
+
+#search:focus {
+
+  outline: 2px solid #60a5fa;
+
+}
+
+.featured-poster {
+
+  width: 250px;
+
+  border-radius: 15px;
+
+  box-shadow:
+    0 0 20px rgba(0,0,0,0.5);
+}
+
+.featured-poster {
+
+  width: 250px;
+
+  border-radius: 15px;
+
+  box-shadow:
+    0 0 20px rgba(0,0,0,0.5);
+}
+
+.featured-info {
+
+  position: relative;
+
+  z-index: 2;
+
+  flex: 1;
+
+  text-align: center;
+
+}
+
+.featured-info h1 {
+
+  font-size: 60px;
+
+  margin-bottom: 15px;
+}
+
+#stats {
+
+  display: grid;
+
+  grid-template-columns: repeat(3, 1fr);
+
+  gap: 25px;
+
+  margin: 40px 0;
+}
+
+.stat-card {
+
+  background: #1f2937;
+
+  border-radius: 15px;
+
+  padding: 25px;
+
+  text-align: center;
+
+  transition: 0.3s;
+}
+
+.stat-card:hover {
+
+  transform: translateY(-5px);
+}
+
+.stat-card h2 {
+
+  font-size: 24px;
+
+  color: #60a5fa;
+
+  margin-bottom: 10px;
+
+  word-break: break-word;
+}
+
+.stat-card p {
+
+  font-size: 18px;
+
+  color: #d1d5db;
+}
+
+.modal {
+
+  display: none;
+
+  position: fixed;
+
+  top: 0;
+  left: 0;
+
+  width: 100%;
+  height: 100%;
+
+  background:
+    rgba(0,0,0,0.8);
+
+  justify-content: center;
+
+  align-items: center;
+
+  z-index: 999;
+}
+
+.modal-content {
+
+  background: #1f2937;
+
+  width: 700px;
+
+  max-width: 90%;
+
+  border-radius: 15px;
+
+  padding: 30px;
+
+  position: relative;
+}
+
+#close-modal {
+
+  position: absolute;
+
+  top: 15px;
+  right: 20px;
+
+  cursor: pointer;
+
+  font-size: 24px;
+}
+
+.progress-bar {
+
+  width: 100%;
+
+  height: 10px;
+
+  background: #111827;
+
+  border-radius: 20px;
+
+  overflow: hidden;
+
+  margin: 10px 0;
+}
+
+.progress-fill {
+
+  height: 100%;
+
+  background: linear-gradient(
+    90deg,
+    #2563eb,
+    #60a5fa
+  );
+
+  border-radius: 20px;
+}
+
+.progress-text {
+
+  color: #9ca3af;
+
+  font-size: 14px;
+
+  margin-bottom: 10px;
+}
+
+#filters {
+
+  display: flex;
+
+  justify-content: center;
+
+  gap: 15px;
+
+  margin: 40px 0;
+
+  flex-wrap: wrap;
+}
+
+.filter-btn {
+
+  background: #1f2937;
+
+  color: white;
+
+  border: none;
+
+  padding: 12px 24px;
+
+  border-radius: 999px;
+
+  cursor: pointer;
+
+  transition: 0.3s;
+}
+
+.filter-btn:hover {
+
+  background: #2563eb;
+}
+
+.filter-btn.active {
+
+  background: #2563eb;
+}

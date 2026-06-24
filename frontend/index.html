@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>frontend</title>
+  </head>
+  <body>
+  <h1>Anime Tracker</h1>
+
+  <input
+    id="search"
+    type="text"
+    placeholder="Search Anime..."
+  >
+
+  <div id="stats">
+
+    <div class="stat-card">
+      <h2 id="anime-count">0</h2>
+      <p>Total Anime</p>
+    </div>
+
+    <div class="stat-card">
+      <h2 id="hours-watched">0</h2>
+      <p>Hours Watched</p>
+    </div>
+
+    <div class="stat-card">
+      <h2 id="top-anime">-</h2>
+      <p>Most Watched Anime</p>
+    </div>
+
+  </div>
+
+  <div id="featured-anime"></div>
+
+  <div id="filters">
+
+    <button class="filter-btn active">
+      All
+    </button>
+
+    <button class="filter-btn">
+      Anime
+    </button>
+
+    <button class="filter-btn">
+      Movies
+    </button>
+
+    <button class="filter-btn">
+      Series
+    </button>
+
+    <button class="filter-btn">
+      K-Drama
+    </button>
+
+  </div>
+
+  <h2 class="section-title">
+    Watch History
+  </h2>
+
+  <div id="anime-list"></div>
+  <script type="module" src="/src/main.js"></script>
+  <div id="modal" class="modal">
+
+    <div class="modal-content">
+
+      <span id="close-modal">
+        ✖
+      </span>
+
+      <div id="modal-body"></div>
+
+    </div>
+
+  </div>
+  </body>
+</html>

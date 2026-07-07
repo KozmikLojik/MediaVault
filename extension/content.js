@@ -1,4 +1,45 @@
+const SITE =
+  window.location.hostname;
+
+const isIframe =
+  window !== window.top;
+
 console.log("Anime Tracker Loaded");
+console.log(
+  "MediaVault running on:",
+  SITE
+);
+console.log(
+  "Is iframe:",
+  isIframe
+);
+
+let receivedAnimeTitle = null;
+let receivedEpisode = null;
+
+window.addEventListener(
+  "message",
+  (event) => {
+
+    if (
+      event.data.type ===
+      "MEDIAVAULT_METADATA"
+    ) {
+
+      receivedAnimeTitle =
+        event.data.animeTitle;
+
+      receivedEpisode =
+        event.data.episode;
+
+      console.log(
+        "Received metadata:",
+        event.data
+      );
+    }
+
+  }
+);
 
 /*
 ========================================
@@ -11,17 +52,40 @@ function getAnimeTitle() {
   try {
 
     if (window.top !== window.self) {
-
       return "Iframe Anime";
     }
 
-    return document.title
-      .replace(" — Watch TV Free | AniDoor", "")
-      .trim();
+    if (
+      document.title &&
+      document.title.includes("— Watch")
+    ) {
+      return document.title
+        .split("— Watch")[0]
+        .trim();
+    }
+
+    const selectors = [
+      ".anime-title",
+      ".film-name",
+      "h1"
+    ];
+
+    for (const selector of selectors) {
+
+      const element =
+        document.querySelector(selector);
+
+      if (element) {
+        return element.innerText.trim();
+      }
+    }
+
+    return "Unknown Anime";
 
   } catch {
 
     return "Unknown Anime";
+
   }
 }
 
@@ -31,19 +95,34 @@ GET EPISODE NUMBER
 ========================================
 */
 
+function getEpisode() {
+
+  const element =
+    document.querySelector(
+      ".np-title"
+    );
+
+  if (element) {
+    return element.innerText.trim();
+  }
+
+  return "Unknown Episode";
+}
+
 function getEpisodeNumber() {
+  return getEpisode();
+}
+
+function getCurrentPageUrl() {
 
   try {
 
-    const ep = document.querySelector(".np-title");
+    return window.location.href || document.URL || "";
 
-    if (ep) {
-      return ep.innerText.trim();
-    }
+  } catch {
 
-  } catch {}
-
-  return "Unknown Episode";
+    return "";
+  }
 }
 
 /*
@@ -56,25 +135,65 @@ let trackingStarted = false;
 
 if (window.location.hostname.includes("anidoor.me")) {
 
+  function sendMetadataToIframe(
+    title,
+    episode
+  ) {
+    const iframe =
+      document.querySelector("iframe");
+
+    if (!iframe) return;
+
+    iframe.onload = () => {
+
+      iframe.contentWindow.postMessage(
+        {
+          type:
+            "MEDIAVAULT_METADATA",
+
+          animeTitle: title,
+
+          episode
+        },
+        "*"
+      );
+
+      console.log(
+        "Sent metadata:",
+        title,
+        episode
+      );
+
+    };
+  }
+
   const saveAnimeInfo = () => {
 
-    const title = document.title;
+    const title =
+      receivedAnimeTitle ||
+      getAnimeTitle();
 
     const episode =
-      document.querySelector(".np-title")?.innerText;
+      receivedEpisode ||
+      getEpisode();
+
+    sendMetadataToIframe(
+      title,
+      episode
+    );
 
     if (
       title &&
-      !title.includes("Watch Anime — AniDoor") &&
-      episode
+      title !== "Unknown Anime" &&
+      title !== "Iframe Anime" &&
+      episode &&
+      episode !== "Unknown Episode"
     ) {
 
       const animeInfo = {
-        animeTitle: title
-          .split(" — Watch")[0]
-          .trim(),
+        animeTitle: title,
         episode,
-        url: window.location.href
+        url: getCurrentPageUrl()
       };
 
       chrome.storage.local.set({
@@ -99,6 +218,20 @@ if (window.location.hostname.includes("anidoor.me")) {
   }, 1000);
 }
 
+function getVideoPlayer() {
+
+  const videos =
+    document.querySelectorAll(
+      "video"
+    );
+
+  if (videos.length > 0) {
+    return videos[0];
+  }
+
+  return null;
+}
+
 function waitForVideo() {
 
   console.log("Waiting for video...");
@@ -110,7 +243,7 @@ function waitForVideo() {
       return;
     }
 
-    const video = document.querySelector("video");
+    const video = getVideoPlayer();
 
     if (video) {
 
@@ -119,6 +252,8 @@ function waitForVideo() {
       console.log("Video Found");
 
       clearInterval(interval);
+
+      restoreProgress(video);
 
       startTracking(video);
     }
@@ -132,22 +267,71 @@ TRACK VIDEO
 ========================================
 */
 
-function startTracking(video) {
+function restoreProgress(video) {
 
-  console.log("START TRACKING RUNNING");
-  console.log("HOST:", window.location.hostname);
+  chrome.storage.local.get(
+    ["animeData"],
+    (result) => {
+
+      const saved =
+        result.animeData;
+
+      if (!saved) {
+        return;
+      }
+
+      const currentUrl = getCurrentPageUrl();
+
+      const resumeUrl =
+        document.referrer &&
+        document.referrer.includes(
+          "anidoor.me"
+        )
+          ? document.referrer
+          : currentUrl;
+
+      if (saved.url === resumeUrl) {
+
+        video.currentTime =
+          saved.currentTime;
+
+        console.log(
+          "RESUMED TO:",
+          saved.currentTime
+        );
+
+      }
+
+    }
+  ); 
+
+}
+
+function startSaving(video) {
 
   chrome.storage.local.get(
     ["currentAnimeInfo"],
     (result) => {
 
-      const animeTitle =
+      let animeTitle =
         result.currentAnimeInfo?.animeTitle ||
-        "Unknown Anime";
+        receivedAnimeTitle ||
+        getAnimeTitle();
 
-      const episode =
+      let episode =
         result.currentAnimeInfo?.episode ||
-        "Unknown Episode";
+        receivedEpisode ||
+        getEpisode();
+
+      if (receivedAnimeTitle) {
+        animeTitle =
+          receivedAnimeTitle;
+      }
+
+      if (receivedEpisode) {
+        episode =
+          receivedEpisode;
+      }
 
       const animeUrl =
         result.currentAnimeInfo?.url ||
@@ -175,12 +359,14 @@ function startTracking(video) {
         lastSavedTime = currentTime;
 
         const data = {
+          type: "Anime",
           animeTitle,
           episode,
           currentTime,
           duration,
-          url: window.location.href,
-          updatedAt: new Date().toISOString()
+          url: getCurrentPageUrl(),
+          updatedAt:
+            new Date().toISOString()
         };
 
         chrome.storage.local.set({
@@ -198,6 +384,37 @@ function startTracking(video) {
 
     }
   );
+}
+
+function startTracking(video) {
+
+  console.log("START TRACKING RUNNING");
+  console.log("HOST:", window.location.hostname);
+
+  if (window !== window.top) {
+
+    const wait =
+      setInterval(() => {
+
+        if (
+          receivedAnimeTitle
+        ) {
+
+          clearInterval(
+            wait
+          );
+
+          startSaving(
+            video
+          );
+        }
+
+      }, 500);
+
+    return;
+  }
+
+  startSaving(video);
 }
 
 /*

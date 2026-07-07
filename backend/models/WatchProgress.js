@@ -3,6 +3,12 @@ const mongoose = require("mongoose");
 const WatchProgressSchema =
   new mongoose.Schema({
 
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true
+    },
+
     animeTitle: {
       type: String,
       required: true
@@ -28,11 +34,21 @@ const WatchProgressSchema =
       default: ""
     },
 
+    type: {
+      type: String,
+      default: "Anime"
+    },
+
     updatedAt: {
       type: String
     }
 
   });
+
+WatchProgressSchema.index(
+  { user: 1, animeTitle: 1 },
+  { unique: true }
+);
 
 module.exports =
   mongoose.model(

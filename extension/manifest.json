@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Anime Tracker",
+  "name": "MediaVault",
   "version": "1.0",
 
   "permissions": [
@@ -14,7 +14,11 @@
 
   "content_scripts": [
     {
-      "matches": ["https://*/*"],
+      "matches": [
+        "https://anidoor.me/*",
+        "https://vidnest.fun/*",
+        "https://hianime.to/*"
+      ],
       "js": ["content.js"],
       "all_frames": true
     }

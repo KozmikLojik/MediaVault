@@ -1,0 +1,114 @@
+body {
+  width: 320px;
+  padding: 25px;
+
+  background:
+    linear-gradient(
+      180deg,
+      #020617,
+      #0f172a
+    );
+
+  color: white;
+
+  font-family:
+    Inter,
+    Arial,
+    sans-serif;
+}
+
+h1 {
+  text-align: center;
+  margin-top: 0;
+
+  color: #60a5fa;
+}
+
+#current-anime {
+  background:
+    rgba(255,255,255,.05);
+
+  border:
+    1px solid rgba(255,255,255,.08);
+
+  border-radius: 20px;
+
+  padding: 20px;
+
+  margin-bottom: 20px;
+}
+
+h2 {
+  margin-top: 0;
+  color: white;
+}
+
+p {
+  color: #cbd5e1;
+}
+
+button {
+  width: 100%;
+  margin-top: 10px;
+  padding: 14px;
+
+  border: none;
+  border-radius: 12px;
+
+  background:
+    linear-gradient(
+      90deg,
+      #2563eb,
+      #3b82f6
+    );
+
+  color: white;
+
+  font-weight: bold;
+  cursor: pointer;
+}
+
+button:hover {
+  opacity: .9;
+}
+
+.secondary-btn {
+  background:
+    rgba(255,255,255,.08) !important;
+
+  border:
+    1px solid rgba(255,255,255,.12);
+}
+
+.auth-label {
+  color: #cbd5e1;
+  text-align: center;
+  margin-bottom: 15px;
+}
+
+input {
+  width: 100%;
+  margin-bottom: 10px;
+  padding: 12px;
+
+  border: none;
+  border-radius: 10px;
+
+  background:
+    rgba(255,255,255,.08);
+
+  color: white;
+  box-sizing: border-box;
+}
+
+.auth-error {
+  color: #f87171;
+  font-size: 13px;
+  min-height: 18px;
+}
+
+#user-greeting {
+  text-align: center;
+  color: #60a5fa;
+  margin-bottom: 15px;
+}

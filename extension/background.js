@@ -1,5 +1,8 @@
 console.log("Background Running");
 
+const API_URL =
+  "http://localhost:5000";
+
 /*
 ========================================
 LISTEN FOR CONTENT SCRIPT
@@ -10,45 +13,80 @@ chrome.runtime.onMessage.addListener(
 
   async (message, sender, sendResponse) => {
 
-    console.log("MESSAGE RECEIVED");
-
-    console.log(message);
-
     if (message.type === "SAVE_ANIME") {
 
       try {
 
+        const stored =
+          await chrome.storage.local.get(
+            ["token"]
+          );
+
+        const token =
+          stored.token;
+
+        if (!token) {
+
+          console.log(
+            "No token — open extension popup to login"
+          );
+
+          return;
+
+        }
+
         const response = await fetch(
 
-          "http://localhost:5000/api/progress/save",
+          `${API_URL}/api/progress/save`,
 
           {
 
             method: "POST",
 
             headers: {
-              "Content-Type": "application/json"
+              "Content-Type":
+                "application/json",
+              Authorization:
+                `Bearer ${token}`
             },
 
-            body: JSON.stringify(message.data)
+            body: JSON.stringify(
+              message.data
+            )
 
           }
 
         );
 
-        const result = await response.json();
+        if (!response.ok) {
 
-        console.log("Saved To Backend");
+          console.log(
+            "Save failed:",
+            response.status
+          );
+
+          return;
+
+        }
+
+        const result =
+          await response.json();
+
+        console.log(
+          "Saved To Backend"
+        );
 
         console.log(result);
 
       } catch (err) {
 
         console.log("FETCH ERROR");
-
         console.log(err);
 
       }
+
     }
+
   }
+
 );

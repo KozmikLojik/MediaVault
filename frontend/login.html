@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login — MediaVault</title>
+</head>
+<body>
+
+  <nav class="navbar">
+    <div class="nav-logo">🎬 MediaVault</div>
+    <div class="nav-links">
+      <a href="/">Home</a>
+      <a class="active" href="/login.html">Login</a>
+      <a href="/register.html">Register</a>
+    </div>
+  </nav>
+
+  <div class="auth-container">
+    <div class="auth-card">
+      <h1>Welcome back</h1>
+      <p class="auth-subtitle">Sign in to sync your watch history</p>
+
+      <form id="login-form" class="auth-form">
+        <label>
+          Email
+          <input id="email" type="email" required placeholder="you@example.com" />
+        </label>
+
+        <label>
+          Password
+          <input id="password" type="password" required placeholder="••••••••" />
+        </label>
+
+        <p id="auth-error" class="auth-error"></p>
+
+        <button id="submit-btn" type="submit">Login</button>
+      </form>
+
+      <p class="auth-switch">
+        No account?
+        <a href="/register.html">Register</a>
+      </p>
+    </div>
+  </div>
+
+  <script type="module" src="/src/login.js"></script>
+</body>
+</html>

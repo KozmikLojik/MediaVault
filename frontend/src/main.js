@@ -1,15 +1,37 @@
 
 import axios from "axios";
+import { io } from "socket.io-client";
 
+import config from "./config";
 import "./style.css";
+import {
+  requireAuth,
+  fetchWithAuth,
+  initNavAuth
+} from "./services/api";
+
+if (!requireAuth()) {
+  throw new Error("Redirecting to login");
+}
+
+initNavAuth();
+
+const socket = io(config.API_URL);
 const animeList =
   document.getElementById("anime-list");
 
 const searchInput =
   document.getElementById("search");
 
-const featuredAnime =
-  document.getElementById("featured-anime");
+const loader =
+  document.getElementById(
+    "loader"
+  );
+
+const errorMessage =
+  document.getElementById(
+    "error-message"
+  );
   
 const modal =
   document.getElementById("modal");
@@ -26,8 +48,64 @@ const filterButtons =
   );
 
 let allAnime = [];
+
+function formatTimeAgo(dateString) {
+
+  if (!dateString) {
+    return "Unknown";
+  }
+
+  const seconds =
+    Math.floor(
+      (Date.now() -
+        new Date(dateString)) /
+        1000
+    );
+
+  if (seconds < 60) {
+    return "Just now";
+  }
+
+  const minutes =
+    Math.floor(seconds / 60);
+
+  if (minutes < 60) {
+    return `${minutes} min${minutes === 1 ? "" : "s"} ago`;
+  }
+
+  const hours =
+    Math.floor(minutes / 60);
+
+  if (hours < 24) {
+    return `${hours} hour${hours === 1 ? "" : "s"} ago`;
+  }
+
+  const days =
+    Math.floor(hours / 24);
+
+  if (days === 1) {
+    return "Yesterday";
+  }
+
+  if (days < 7) {
+    return `${days} days ago`;
+  }
+
+  return new Date(dateString)
+    .toLocaleDateString();
+
+}
   
 async function getAnimePoster(title) {
+
+  const cachedPoster =
+    localStorage.getItem(
+      `poster-${title}`
+    );
+
+  if (cachedPoster) {
+    return cachedPoster;
+  }
 
   try {
 
@@ -51,7 +129,16 @@ async function getAnimePoster(title) {
       }
     );
 
-    return response.data.data.Media.coverImage.large;
+    const poster =
+      response.data.data.Media
+        .coverImage.large;
+
+    localStorage.setItem(
+      `poster-${title}`,
+      poster
+    );
+
+    return poster;
 
   } catch {
 
@@ -62,6 +149,26 @@ async function getAnimePoster(title) {
 }
 
 async function renderAnime(data) {
+
+  if (data.length === 0) {
+
+    animeList.innerHTML = `
+      <div class="empty-state">
+
+        <h2>
+          No media found
+        </h2>
+
+        <p>
+          Start watching something!
+        </p>
+
+      </div>
+    `;
+
+    return;
+
+  }
 
   animeList.innerHTML = "";
 
@@ -87,36 +194,38 @@ async function renderAnime(data) {
 
       <p>${anime.episode}</p>
 
+      <p class="last-watched">
+        ${formatTimeAgo(anime.updatedAt)}
+      </p>
+
       <p>
         Time:
         ${Math.floor(anime.currentTime / 60)}m
         ${Math.floor(anime.currentTime % 60)}s
       </p>
 
-      <div class="progress-bar">
-
+      <div class="progress-container">
         <div
           class="progress-fill"
           style="
             width:
             ${Math.min(
-              anime.currentTime / 1440 * 100,
+              ((anime.currentTime || 0) /
+                (anime.duration || 1)) * 100,
               100
             )}%;
           "
         ></div>
-
       </div>
 
-      <p class="progress-text">
-
-        ${Math.min(
-          Math.floor(
-            anime.currentTime / 1440 * 100
-          ),
-          100
+      <p>
+        ${Math.floor(
+          Math.min(
+            ((anime.currentTime || 0) /
+              (anime.duration || 1)) * 100,
+            100
+          )
         )}% watched
-
       </p>
 
       <button class="watch-btn">
@@ -173,17 +282,136 @@ async function renderAnime(data) {
 
 }
 
+async function renderContinueWatching() {
+
+  const container =
+    document.getElementById(
+      "continue-watching"
+    );
+
+  container.innerHTML = "";
+
+  const recent =
+    allAnime.slice(0, 5);
+
+  for (const anime of recent) {
+
+    const poster =
+      await getAnimePoster(
+        anime.animeTitle
+      );
+
+    const card =
+      document.createElement(
+        "div"
+      );
+
+    card.className =
+      "continue-card";
+
+    card.innerHTML = `
+      <img
+        src="${poster}"
+        alt="${anime.animeTitle}"
+      />
+
+      <div class="continue-info">
+        <h3>${anime.animeTitle}</h3>
+
+        <p>
+          ${anime.episode}
+        </p>
+
+        <p>
+          ${Math.floor(
+            Math.min(
+              ((anime.currentTime || 0) /
+              (anime.duration || 1)) * 100,
+              100
+            )
+          )}% watched
+        </p>
+      </div>
+    `;
+
+    card.onclick =
+      () => {
+        window.open(
+          anime.url,
+          "_blank"
+        );
+      };
+
+    container.appendChild(
+      card
+    );
+
+  }
+
+}
+
 async function loadAnime() {
 
-  const response = await fetch(
-    "http://localhost:5000/api/progress"
-  );
+  loader.style.display =
+    "block";
 
-  const data = await response.json();
+  errorMessage.style.display =
+    "none";
 
-  allAnime = data;
+  let data = [];
 
-  let filteredData = data;
+  try {
+
+    const response =
+      await fetchWithAuth(
+        `${config.API_URL}/api/progress`
+      );
+
+    if (!response.ok) {
+
+      throw new Error(
+        "Server Error"
+      );
+
+    }
+
+    data = await response.json();
+
+  } catch (error) {
+
+    console.error(error);
+
+    loader.style.display =
+      "none";
+
+    errorMessage.style.display =
+      "block";
+
+    errorMessage.innerHTML = `
+      ❌ Unable to connect
+      to MediaVault backend.
+      <br><br>
+      Start your backend server
+      and refresh the page.
+    `;
+
+    return;
+
+  }
+
+  allAnime =
+    data
+      .map(anime => ({
+        ...anime,
+        type: anime.type || "Anime"
+      }))
+      .sort(
+        (a, b) =>
+          new Date(b.updatedAt) -
+          new Date(a.updatedAt)
+      );
+
+  let filteredData = allAnime;
 
   const totalAnime = data.length;
 
@@ -219,77 +447,39 @@ async function loadAnime() {
       ? topAnime.animeTitle
       : "-";
 
-  data.sort(
-    (a, b) =>
-      new Date(b.updatedAt) -
-      new Date(a.updatedAt)
-  );
-
-  const latest = data[0];
-
-  const featuredPoster =
-    await getAnimePoster(
-      latest.animeTitle
-    );
-
-  featuredAnime.innerHTML = `
-<div
-  class="featured-card"
-  style="
-    background-image:
-    url('${featuredPoster}');
-  "
->
-
-  <div class="featured-info">
-
-    <h2>
-      Continue Watching
-    </h2>
-
-    <h1>
-      ${latest.animeTitle}
-    </h1>
-
-    <p>
-      ${latest.episode}
-    </p>
-
-    <p>
-      ${Math.floor(latest.currentTime / 60)}m
-      ${Math.floor(latest.currentTime % 60)}s
-    </p>
-
-    <button
-      id="featured-btn"
-      class="watch-btn"
-    >
-      ▶ Continue Watching
-    </button>
-
-  </div>
-
-</div>
-`;
-
-  document
-    .getElementById("featured-btn")
-    .addEventListener("click", () => {
-
-      if (latest.url) {
-
-        window.location.href =
-          latest.url;
-
-      }
-
-    });
-
   await renderAnime(filteredData);
+
+  await renderContinueWatching();
+
+  loader.style.display =
+    "none";
 
 }
 
 loadAnime();
+
+let reloadTimeout;
+
+socket.on(
+  "history-updated",
+  () => {
+
+    console.log(
+      "History Updated!"
+    );
+
+    clearTimeout(
+      reloadTimeout
+    );
+
+    reloadTimeout =
+      setTimeout(
+        loadAnime,
+        500
+      );
+
+  }
+);
 
 searchInput.addEventListener(
   "input",
@@ -326,19 +516,67 @@ filterButtons.forEach(button => {
 
   button.addEventListener(
     "click",
-    () => {
+    async () => {
 
       filterButtons.forEach(btn =>
-        btn.classList.remove("active")
+        btn.classList.remove(
+          "active"
+        )
       );
 
-      button.classList.add("active");
+      button.classList.add(
+        "active"
+      );
 
-      alert(
-        `${button.innerText} filter selected`
+      const filter =
+        button.innerText;
+
+      if (filter === "All") {
+
+        await renderAnime(
+          allAnime
+        );
+
+        return;
+      }
+
+      const filtered =
+        allAnime.filter(
+          anime =>
+            (anime.type || "Anime") ===
+            filter
+        );
+
+      await renderAnime(
+        filtered
       );
 
     }
   );
 
 });
+
+const slides =
+  document.querySelectorAll(
+    ".hero-slide"
+  );
+
+let currentSlide = 0;
+
+setInterval(() => {
+
+  slides[currentSlide]
+    .classList.remove(
+      "active"
+    );
+
+  currentSlide =
+    (currentSlide + 1)
+    % slides.length;
+
+  slides[currentSlide]
+    .classList.add(
+      "active"
+    );
+
+}, 5000);

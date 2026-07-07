@@ -1,38 +1,54 @@
 <!DOCTYPE html>
-
-<html>
-
+<html lang="en">
 <head>
-
-  <title>Anime Tracker</title>
-
-  <link rel="stylesheet" href="styles.css">
-
+  <meta charset="UTF-8" />
+  <title>MediaVault</title>
+  <link rel="stylesheet" href="popup.css" />
 </head>
-
 <body>
+  <h1>🎬 MediaVault</h1>
 
-  <div class="container">
+  <div id="auth-section">
+    <p class="auth-label">Sign in to sync progress</p>
 
-    <h1>Anime Tracker</h1>
+    <input
+      id="email"
+      type="email"
+      placeholder="Email"
+    />
 
-    <div class="card">
+    <input
+      id="password"
+      type="password"
+      placeholder="Password"
+    />
 
-      <p><strong>Anime:</strong></p>
-      <p id="title"></p>
+    <p id="auth-error" class="auth-error"></p>
 
-      <p><strong>Episode:</strong></p>
+    <button id="login-btn">Login</button>
+
+    <button
+      id="register-link"
+      class="secondary-btn"
+    >
+      Create account on web
+    </button>
+  </div>
+
+  <div id="app-section" style="display: none;">
+    <p id="user-greeting"></p>
+
+    <div id="current-anime">
+      <h2 id="title">Nothing Playing</h2>
       <p id="episode"></p>
-
-      <p><strong>Current Time:</strong></p>
       <p id="time"></p>
-
     </div>
 
+    <button id="continue-btn">▶ Continue Watching</button>
+    <button id="dashboard-btn">📊 Open Dashboard</button>
+    <button id="logout-btn" class="secondary-btn">Logout</button>
   </div>
 
   <script src="popup.js"></script>
-
 </body>
-
 </html>

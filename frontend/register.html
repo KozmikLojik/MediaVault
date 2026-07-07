@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Register — MediaVault</title>
+</head>
+<body>
+
+  <nav class="navbar">
+    <div class="nav-logo">🎬 MediaVault</div>
+    <div class="nav-links">
+      <a href="/">Home</a>
+      <a href="/login.html">Login</a>
+      <a class="active" href="/register.html">Register</a>
+    </div>
+  </nav>
+
+  <div class="auth-container">
+    <div class="auth-card">
+      <h1>Create account</h1>
+      <p class="auth-subtitle">Start tracking across all your devices</p>
+
+      <form id="register-form" class="auth-form">
+        <label>
+          Username
+          <input id="username" type="text" required placeholder="Your username" />
+        </label>
+
+        <label>
+          Email
+          <input id="email" type="email" required placeholder="you@example.com" />
+        </label>
+
+        <label>
+          Password
+          <input id="password" type="password" required placeholder="••••••••" minlength="6" />
+        </label>
+
+        <p id="auth-error" class="auth-error"></p>
+
+        <button id="submit-btn" type="submit">Register</button>
+      </form>
+
+      <p class="auth-switch">
+        Already have an account?
+        <a href="/login.html">Login</a>
+      </p>
+    </div>
+  </div>
+
+  <script type="module" src="/src/register.js"></script>
+</body>
+</html>

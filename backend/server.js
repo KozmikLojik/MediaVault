@@ -1,12 +1,25 @@
 const express = require("express");
-const mongoose = require("mongoose");
 const cors = require("cors");
+const http = require("http");
+const { Server } = require("socket.io");
 
 require("dotenv").config();
 
-console.log(process.env.MONGO_URI);
+const connectDB = require("./config/db");
 
 const app = express();
+
+const server = http.createServer(app);
+
+const io = new Server(server, {
+  cors: {
+    origin: "*"
+  }
+});
+
+app.set("io", io);
+
+connectDB();
 
 /*
 ========================================
@@ -20,31 +33,14 @@ app.use(express.json());
 
 /*
 ========================================
-DATABASE
-========================================
-*/
-
-mongoose.connect(process.env.MONGO_URI)
-
-.then(() => {
-
-  console.log("MongoDB Connected");
-
-})
-
-.catch((err) => {
-
-  console.log("MONGO ERROR");
-
-  console.log(err);
-
-});
-
-/*
-========================================
 ROUTES
 ========================================
 */
+
+app.use(
+  "/api/auth",
+  require("./routes/authRoutes")
+);
 
 app.use(
   "/api/progress",
@@ -57,8 +53,13 @@ SERVER
 ========================================
 */
 
-app.listen(5000, () => {
+const PORT =
+  process.env.PORT || 5000;
 
-  console.log("Server Running On Port 5000");
+server.listen(PORT, () => {
+
+  console.log(
+    `Server Running On Port ${PORT}`
+  );
 
 });

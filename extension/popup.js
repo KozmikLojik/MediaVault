@@ -1,5 +1,5 @@
 const API_URL =
-  "http://localhost:5000";
+  "https://mediavault-backend-vxsb.onrender.com";
 
 const authSection =
   document.getElementById(
@@ -168,7 +168,7 @@ document
 
     }
 
-  };
+  };  
 
 document
   .getElementById(

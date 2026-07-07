@@ -1,7 +1,7 @@
 console.log("Background Running");
 
 const API_URL =
-  "http://localhost:5000";
+  "https://mediavault-backend-vxsb.onrender.com";
 
 /*
 ========================================

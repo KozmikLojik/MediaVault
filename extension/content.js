@@ -306,6 +306,44 @@ function restoreProgress(video) {
   ); 
 
 }
+import { SUPPORTED_SITES } from "./sites.js";
+
+const site =
+  SUPPORTED_SITES[
+    window.location.hostname
+  ];
+
+if (!site) {
+  console.log(
+    "Site not supported"
+  );
+  return;
+}
+function getAnimeTitle() {
+  if (!site?.title)
+    return "Unknown";
+
+  const el =
+    document.querySelector(
+      site.title
+    );
+
+  return el?.innerText.trim()
+    || "Unknown";
+}
+
+function getEpisode() {
+  if (!site?.episode)
+    return "";
+
+  const el =
+    document.querySelector(
+      site.episode
+    );
+
+  return el?.innerText.trim()
+    || "";
+}
 
 function startSaving(video) {
 

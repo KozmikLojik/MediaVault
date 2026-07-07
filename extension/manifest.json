@@ -8,7 +8,7 @@
   ],
 
   "host_permissions": [
-    "http://localhost:5000/*",
+    "https://mediavault-backend-vxsb.onrender.com/*",
     "https://*/*"
   ],
 

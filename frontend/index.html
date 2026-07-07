@@ -2,26 +2,23 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
-    rel="icon"
-    type="image/svg+xml"
-    href="/favicon.svg"
+    href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap"
+    rel="stylesheet"
   />
 
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
-  />
-
-  <title>MediaVault</title>
+  <title>MediaVault — Now Screening</title>
 </head>
 
 <body>
 
   <nav class="navbar">
-    <div class="nav-logo">
-      🎬 MediaVault
-    </div>
+    <div class="nav-logo">🎞 MediaVault</div>
     <div class="nav-links">
       <a class="active" href="#">Home</a>
       <a href="#">Library</a>
@@ -29,181 +26,108 @@
       <a href="#">Settings</a>
       <span id="nav-user" class="nav-user"></span>
       <a href="#" id="logout-btn">Logout</a>
-      <a
-        href="https://github.com/KozmikLojik/MediaVault"
-        target="_blank"
-      >
-        GitHub
-      </a>
+      <a href="https://github.com/KozmikLojik/MediaVault" target="_blank">GitHub</a>
     </div>
   </nav>
 
   <div class="page-container">
 
     <header class="hero">
-
-      <div class="hero-glow"></div>
-
-      <h1 class="logo">
-        MediaVault
-      </h1>
-
+      <p class="hero-eyebrow">Reel · Track · Resume</p>
+      <h1 class="logo">MediaVault</h1>
       <p class="hero-subtitle">
-        Track your anime, movies and series.
-        Continue exactly where you left off.
+        Every episode, every minute — remembered.
+        Pick up exactly where the credits cut you off.
       </p>
 
-      <input
-        id="search"
-        type="text"
-        placeholder="🔍 Search Anime..."
-      />
-
+      <div class="search-wrap">
+        <input id="search" type="text" placeholder="Search your library…" />
+      </div>
     </header>
 
     <section id="stats">
-
       <div class="stat-card">
+        <span class="stat-label">Titles Logged</span>
         <h2 id="anime-count">0</h2>
-        <p>Total Anime</p>
       </div>
-
       <div class="stat-card">
+        <span class="stat-label">Hours Watched</span>
         <h2 id="hours-watched">0</h2>
-        <p>Hours Watched</p>
       </div>
-
       <div class="stat-card">
-        <h2 id="top-anime">-</h2>
-        <p>Most Watched Anime</p>
+        <span class="stat-label">Top Pick</span>
+        <h2 id="top-anime">—</h2>
       </div>
-
     </section>
 
     <div id="error-message"></div>
 
     <div id="loader">
-      Loading MediaVault...
+      <div class="reel-spinner" aria-hidden="true"></div>
+      <span>Rolling film…</span>
     </div>
 
     <section id="featured-anime">
-
+      <p class="rail-label">Now Screening</p>
       <div class="hero-carousel">
 
         <div class="hero-slide active">
-          <img
-            src="/images/solo-leveling.jpg"
-            alt="Solo Leveling"
-          />
-
+          <img src="/images/solo-leveling.jpg" alt="Solo Leveling" />
           <div class="hero-overlay">
+            <span class="hero-tag">Feature Presentation</span>
             <h1>Solo Leveling</h1>
-            <p>
-              The weakest hunter becomes humanity's strongest weapon.
-            </p>
-
-            <button class="hero-btn">
-              ▶ Explore
-            </button>
+            <p>The weakest hunter becomes humanity's strongest weapon.</p>
+            <button class="hero-btn">▶ Explore</button>
           </div>
         </div>
 
         <div class="hero-slide">
-          <img
-            src="/images/classroom.jpg"
-            alt="Classroom of the Elite"
-          />
-
+          <img src="/images/classroom.jpg" alt="Classroom of the Elite" />
           <div class="hero-overlay">
+            <span class="hero-tag">Feature Presentation</span>
             <h1>Classroom of the Elite</h1>
-            <p>
-              Genius students compete in a ruthless elite academy.
-            </p>
-
-            <button class="hero-btn">
-              ▶ Explore
-            </button>
+            <p>Genius students compete in a ruthless elite academy.</p>
+            <button class="hero-btn">▶ Explore</button>
           </div>
         </div>
 
         <div class="hero-slide">
-          <img
-            src="/images/frieren.jpg"
-            alt="Frieren"
-          />
-
+          <img src="/images/frieren.jpg" alt="Frieren" />
           <div class="hero-overlay">
+            <span class="hero-tag">Feature Presentation</span>
             <h1>Frieren</h1>
-            <p>
-              A beautiful journey after the hero's adventure ends.
-            </p>
-
-            <button class="hero-btn">
-              ▶ Explore
-            </button>
+            <p>A beautiful journey after the hero's adventure ends.</p>
+            <button class="hero-btn">▶ Explore</button>
           </div>
         </div>
 
+        <div class="hero-dots" id="hero-dots"></div>
       </div>
-
     </section>
 
-    <h2 class="section-title">
-      Continue Watching
-    </h2>
-
+    <h2 class="section-title">Continue Watching</h2>
     <div id="continue-watching"></div>
 
     <section id="filters">
-
-      <button class="filter-btn active">
-        All
-      </button>
-
-      <button class="filter-btn">
-        Anime
-      </button>
-
-      <button class="filter-btn">
-        Movies
-      </button>
-
-      <button class="filter-btn">
-        Series
-      </button>
-
-      <button class="filter-btn">
-        K-Drama
-      </button>
-
+      <button class="filter-btn active">All</button>
+      <button class="filter-btn">Anime</button>
+      <button class="filter-btn">Movies</button>
+      <button class="filter-btn">Series</button>
+      <button class="filter-btn">K-Drama</button>
     </section>
 
-    <h2 class="section-title">
-      Watch History
-    </h2>
-
+    <h2 class="section-title">Watch History</h2>
     <section id="anime-list"></section>
 
   </div>
 
   <div id="modal" class="modal">
-
     <div class="modal-content">
-
-      <span id="close-modal">
-        ✖
-      </span>
-
+      <span id="close-modal">✖</span>
       <div id="modal-body"></div>
-
     </div>
-
   </div>
 
-  <script
-    type="module"
-    src="/src/main.js"
-  ></script>
-
+  <script type="module" src="/src/main.js"></script>
 </body>
 </html>

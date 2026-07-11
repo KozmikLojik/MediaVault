@@ -577,12 +577,23 @@ input:focus-visible {
   box-shadow:
     0 25px 60px rgba(0,0,0,.5),
     0 0 120px rgba(124,92,255,.15);
+
+  transition: background-image 1s ease, transform 0.5s ease;
 }
 
 .hero-panel .hero-overlay {
   position: relative;
   z-index: 2;
   max-width: 680px;
+}
+
+.hero-panel .featured-type {
+  color: #94a3b8;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  font-size: 11px;
+  font-weight: 600;
+  margin: 0 0 12px;
 }
 
 .hero-panel .hero-tag {
@@ -592,9 +603,9 @@ input:focus-visible {
   letter-spacing: 2px;
   text-transform: uppercase;
   color: var(--secondary);
-  border: 1px solid var(--secondary-soft);
-  background: rgba(0, 0, 0, 0.35);
-  padding: 5px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(124, 92, 255, 0.3);
+  padding: 8px 20px;
   border-radius: 999px;
   margin-bottom: 16px;
 }

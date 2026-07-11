@@ -1,5 +1,4 @@
-const API_URL =
-  "https://mediavault-backend-vxsb.onrender.com";
+import { APP_URL, API_URL } from "./config.js";
 
 const authSection =
   document.getElementById(
@@ -177,8 +176,7 @@ document
   .onclick = () => {
 
     chrome.tabs.create({
-      url:
-        "http://localhost:5173/register.html"
+      url: `${APP_URL}/register.html`
     });
 
   };
@@ -190,8 +188,7 @@ document
   .onclick = () => {
 
     chrome.tabs.create({
-      url:
-        "http://localhost:5173"
+      url: APP_URL
     });
 
   };

@@ -576,153 +576,141 @@ loadSavedTheme();
    ROTATING FEATURED PRESENTATION
 ========================= */
 
-const featuredContent = {
-  anime: [
-    {
-      title: "Solo Leveling",
-      desc: "The weakest hunter becomes humanity's strongest weapon.",
-      wallpaper: "/images/solo-leveling.jpg",
-      tag: "ANIME"
-    },
-    {
-      title: "Frieren",
-      desc: "An elven mage's journey through a changing world.",
-      wallpaper: "/images/frieren.jpg",
-      tag: "ANIME"
-    },
-    {
-      title: "Blue Lock",
-      desc: "The ultimate striker project begins.",
-      wallpaper: "/images/solo-leveling.jpg",
-      tag: "ANIME"
-    },
-    {
-      title: "Dan Da Dan",
-      desc: "Ghosts, aliens, and high school romance.",
-      wallpaper: "/images/frieren.jpg",
-      tag: "ANIME"
-    },
-    {
-      title: "Attack on Titan",
-      desc: "Humanity fights for survival against the Titans.",
-      wallpaper: "/images/solo-leveling.jpg",
-      tag: "ANIME"
-    },
-    {
-      title: "Your Name",
-      desc: "Two strangers connected by a mysterious bond.",
-      wallpaper: "/images/frieren.jpg",
-      tag: "ANIME"
-    }
-  ],
-  kdrama: [
-    {
-      title: "Lovely Runner",
-      desc: "A time-traveling romance that defies destiny.",
-      wallpaper: "/images/frieren.jpg",
-      tag: "K-DRAMA"
-    },
-    {
-      title: "Twenty Five Twenty One",
-      desc: "Youth, dreams, and first loves in the 90s.",
-      wallpaper: "/images/solo-leveling.jpg",
-      tag: "K-DRAMA"
-    },
-    {
-      title: "Squid Game",
-      desc: "A deadly game with a massive prize.",
-      wallpaper: "/images/classroom.jpg",
-      tag: "K-DRAMA"
-    },
-    {
-      title: "Moving",
-      desc: "Superpowered parents protecting their children.",
-      wallpaper: "/images/frieren.jpg",
-      tag: "K-DRAMA"
-    },
-    {
-      title: "Weak Hero Class 1",
-      desc: "A bullied student fights back with strategy.",
-      wallpaper: "/images/solo-leveling.jpg",
-      tag: "K-DRAMA"
-    }
-  ],
-  movies: [
-    {
-      title: "Interstellar",
-      desc: "Love transcends time and space.",
-      wallpaper: "/images/classroom.jpg",
-      tag: "MOVIE"
-    },
-    {
-      title: "Spider-Verse",
-      desc: "Across the Spider-Verse, infinite possibilities.",
-      wallpaper: "/images/solo-leveling.jpg",
-      tag: "MOVIE"
-    },
-    {
-      title: "Dune",
-      desc: "A hero's journey across the desert planet.",
-      wallpaper: "/images/classroom.jpg",
-      tag: "MOVIE"
-    },
-    {
-      title: "The Batman",
-      desc: "Gotham's darkest knight rises.",
-      wallpaper: "/images/solo-leveling.jpg",
-      tag: "MOVIE"
-    },
-    {
-      title: "Oppenheimer",
-      desc: "The father of the atomic bomb.",
-      wallpaper: "/images/classroom.jpg",
-      tag: "MOVIE"
-    },
-    {
-      title: "Top Gun Maverick",
-      desc: "The need for speed returns.",
-      wallpaper: "/images/solo-leveling.jpg",
-      tag: "MOVIE"
-    }
-  ]
-};
+const featuredMedia = [
+  {
+    title: "Solo Leveling",
+    desc: "The weakest hunter becomes humanity's strongest weapon.",
+    image: "/images/solo-leveling.jpg",
+    type: "Anime"
+  },
+  {
+    title: "Interstellar",
+    desc: "Love transcends dimensions and time.",
+    image: "/images/classroom.jpg",
+    type: "Movie"
+  },
+  {
+    title: "Lovely Runner",
+    desc: "A time travel romance that changes destiny.",
+    image: "/images/frieren.jpg",
+    type: "K-Drama"
+  },
+  {
+    title: "Frieren",
+    desc: "A beautiful journey after the hero's adventure ends.",
+    image: "/images/frieren.jpg",
+    type: "Anime"
+  },
+  {
+    title: "The Batman",
+    desc: "Vengeance becomes hope.",
+    image: "/images/solo-leveling.jpg",
+    type: "Movie"
+  },
+  {
+    title: "Twenty Five Twenty One",
+    desc: "Youth, dreams and first love.",
+    image: "/images/solo-leveling.jpg",
+    type: "K-Drama"
+  },
+  {
+    title: "Blue Lock",
+    desc: "Ego and football collide.",
+    image: "/images/solo-leveling.jpg",
+    type: "Anime"
+  },
+  {
+    title: "Dune",
+    desc: "Fear is the mind killer.",
+    image: "/images/classroom.jpg",
+    type: "Movie"
+  },
+  {
+    title: "Squid Game",
+    desc: "A deadly game for survival.",
+    image: "/images/classroom.jpg",
+    type: "K-Drama"
+  },
+  {
+    title: "Attack on Titan",
+    desc: "Humanity fights for survival against the Titans.",
+    image: "/images/solo-leveling.jpg",
+    type: "Anime"
+  },
+  {
+    title: "Oppenheimer",
+    desc: "The father of the atomic bomb.",
+    image: "/images/classroom.jpg",
+    type: "Movie"
+  },
+  {
+    title: "Weak Hero Class 1",
+    desc: "A bullied student fights back with strategy.",
+    image: "/images/solo-leveling.jpg",
+    type: "K-Drama"
+  }
+];
 
-let currentFeaturedIndex = 0;
-let currentCategory = "anime";
-const allFeatured = [...featuredContent.anime, ...featuredContent.kdrama, ...featuredContent.movies];
+const heroPanel = document.querySelector(".hero-panel");
+const featuredTitle = document.getElementById("featured-title");
+const featuredDesc = document.getElementById("featured-desc");
+const heroTag = document.querySelector(".hero-tag");
 
-function rotateFeatured() {
-  const heroPanel = document.querySelector(".hero-panel");
-  const featuredTitle = document.getElementById("featured-title");
-  const featuredDesc = document.getElementById("featured-desc");
-  const heroTag = document.querySelector(".hero-tag");
+console.log("Featured elements:", { heroPanel, featuredTitle, featuredDesc, heroTag });
 
-  if (!heroPanel || !featuredTitle || !featuredDesc || !heroTag) return;
+let featuredIndex = 0;
 
-  const content = allFeatured[currentFeaturedIndex];
+function updateFeatured() {
+  console.log("updateFeatured called, index:", featuredIndex);
+  if (!heroPanel || !featuredTitle || !featuredDesc || !heroTag) {
+    console.error("Missing elements:", { heroPanel, featuredTitle, featuredDesc, heroTag });
+    return;
+  }
 
-  heroPanel.style.opacity = "0";
-  heroPanel.style.transition = "opacity 0.5s ease";
+  const item = featuredMedia[featuredIndex];
 
-  setTimeout(() => {
-    featuredTitle.textContent = content.title;
-    featuredDesc.textContent = content.desc;
-    heroTag.textContent = content.tag;
+  featuredTitle.textContent = item.title;
+  featuredDesc.textContent = item.desc;
+  heroTag.textContent = item.type;
 
-    heroPanel.style.background = `
-      linear-gradient(rgba(0,0,0,.4), rgba(0,0,0,.85)),
-      url("${content.wallpaper}")
-    `;
-    heroPanel.style.backgroundSize = "cover";
-    heroPanel.style.backgroundPosition = "center";
+  // Category-specific glow effects
+  if (item.type === "Anime") {
+    heroPanel.style.boxShadow = "0 25px 60px rgba(0,0,0,.5), 0 0 120px rgba(124,92,255,.3)";
+    heroTag.style.background = "rgba(124, 92, 255, 0.3)";
+    heroTag.style.borderColor = "rgba(124, 92, 255, 0.5)";
+    heroTag.style.color = "#5eead4";
+  } else if (item.type === "Movie") {
+    heroPanel.style.boxShadow = "0 25px 60px rgba(0,0,0,.5), 0 0 120px rgba(234, 179, 8, 0.3)";
+    heroTag.style.background = "rgba(234, 179, 8, 0.3)";
+    heroTag.style.borderColor = "rgba(234, 179, 8, 0.5)";
+    heroTag.style.color = "#f8fafc";
+  } else if (item.type === "K-Drama") {
+    heroPanel.style.boxShadow = "0 25px 60px rgba(0,0,0,.5), 0 0 120px rgba(255, 107, 154, 0.3)";
+    heroTag.style.background = "rgba(255, 107, 154, 0.3)";
+    heroTag.style.borderColor = "rgba(255, 107, 154, 0.5)";
+    heroTag.style.color = "#f8fafc";
+  }
 
-    heroPanel.style.opacity = "1";
-  }, 500);
-
-  currentFeaturedIndex = (currentFeaturedIndex + 1) % allFeatured.length;
+  heroPanel.style.background = `
+    linear-gradient(rgba(0,0,0,.4), rgba(0,0,0,.85)),
+    url(${item.image})
+  `;
+  heroPanel.style.backgroundSize = "cover";
+  heroPanel.style.backgroundPosition = "center";
 }
 
-setInterval(rotateFeatured, 7000);
+updateFeatured();
+
+setInterval(() => {
+  console.log("Interval fired, incrementing index");
+  featuredIndex++;
+  if (featuredIndex >= featuredMedia.length) {
+    featuredIndex = 0;
+  }
+  updateFeatured();
+}, 7000);
+
+console.log("Featured rotation initialized, will update every 7 seconds");
 
 /* =========================
    ROTATING QUOTES

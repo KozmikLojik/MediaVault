@@ -25,7 +25,33 @@ const modal = document.getElementById("modal");
 const modalBody = document.getElementById("modal-body");
 const closeModal = document.getElementById("close-modal");
 const filterButtons = document.querySelectorAll(".filter-btn");
-const heroDotsContainer = document.getElementById("hero-dots");
+const heroPanel = document.querySelector(".hero-panel");
+const heroBackgroundFront = document.querySelector(".hero-background-front");
+const heroBackgroundBack = document.querySelector(".hero-background-back");
+const heroOverlay = document.querySelector(".hero-overlay");
+const featuredTitle = document.getElementById("featured-title");
+const featuredDesc = document.getElementById("featured-desc");
+const featuredCategory = document.getElementById("featured-category");
+const featuredRating = document.getElementById("featured-rating");
+const featuredDuration = document.getElementById("featured-duration");
+const featuredEpisodes = document.getElementById("featured-episodes");
+const featuredImdb = document.getElementById("featured-imdb");
+const featuredStatus = document.getElementById("featured-status");
+const featuredStatusLabel = document.getElementById("featured-status-label");
+const featuredGenres = document.getElementById("featured-genres");
+const featuredStudio = document.getElementById("featured-studio");
+const featuredButton = document.getElementById("featured-button");
+const heroTag = featuredCategory;
+const heroPosterImg = document.querySelector(".hero-poster-img");
+const heroPoster = document.getElementById("hero-poster");
+const quickCards = document.querySelectorAll(".quick-card");
+const navbar = document.querySelector(".navbar");
+const weatherIcon = document.querySelector(".weather-icon");
+const weatherTemp = document.querySelector(".weather-temp");
+const weatherDesc = document.querySelector(".weather-desc");
+const statusText = document.getElementById("system-status");
+const storageText = document.getElementById("storage-used");
+const activityText = document.getElementById("recent-activity");
 
 let allAnime = [];
 
@@ -61,7 +87,6 @@ function formatTimeAgo(dateString) {
   return new Date(dateString).toLocaleDateString();
 }
 
-// mm:ss style timecode, like a film counter
 function formatTimecode(seconds) {
   const total = Math.max(0, Math.floor(seconds || 0));
   const m = Math.floor(total / 60);
@@ -252,6 +277,9 @@ async function loadAnime() {
     .map(anime => ({ ...anime, type: anime.type || "Anime" }))
     .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
 
+  refreshWatchHistory();
+  await updateFeatured();
+
   let filteredData = allAnime;
 
   const totalAnime = data.length;
@@ -277,21 +305,22 @@ loadAnime();
 let reloadTimeout;
 
 socket.on("history-updated", () => {
-  console.log("History Updated!");
-
   clearTimeout(reloadTimeout);
   reloadTimeout = setTimeout(loadAnime, 500);
 });
 
-searchInput.addEventListener("input", async () => {
-  const search = searchInput.value.toLowerCase();
+if (searchInput) {
+  searchInput.addEventListener("input", async () => {
+    const search = searchInput.value.toLowerCase();
 
-  const filteredData = allAnime.filter(anime =>
-    anime.animeTitle.toLowerCase().includes(search)
-  );
+    const filteredData = allAnime.filter(anime =>
+      anime.animeTitle.toLowerCase().includes(search) ||
+      (anime.type || "").toLowerCase().includes(search)
+    );
 
-  await renderAnime(filteredData);
-});
+    await renderAnime(filteredData);
+  });
+}
 
 closeModal.addEventListener("click", () => {
   modal.style.display = "none";
@@ -309,116 +338,71 @@ filterButtons.forEach(button => {
     button.classList.add("active");
 
     const filter = button.innerText;
-
-    if (filter === "All") {
-      await renderAnime(allAnime);
-      return;
-    }
-
-    const filtered = allAnime.filter(
-      anime => (anime.type || "Anime") === filter
-    );
+    const filtered = filter === "All"
+      ? allAnime
+      : allAnime.filter(anime => (anime.type || "Anime") === filter);
 
     await renderAnime(filtered);
   });
 });
 
-/* =========================
-   HERO CAROUSEL + DOTS
-========================= */
+quickCards.forEach(card => {
+  const filter = card.dataset.filter || card.textContent.trim();
+  card.addEventListener("click", async () => {
+    filterButtons.forEach(btn => btn.classList.remove("active"));
+    const activeButton = Array.from(filterButtons).find(btn => btn.innerText === filter);
+    if (activeButton) activeButton.classList.add("active");
 
-const slides = document.querySelectorAll(".hero-slide");
-let currentSlide = 0;
-let heroInterval;
+    const filtered = filter === "All"
+      ? allAnime
+      : allAnime.filter(anime => (anime.type || "Anime") === filter);
 
-function goToSlide(index) {
-  slides[currentSlide].classList.remove("active");
-  currentSlide = index;
-  slides[currentSlide].classList.add("active");
-
-  if (heroDotsContainer) {
-    heroDotsContainer
-      .querySelectorAll(".hero-dot")
-      .forEach((dot, i) => dot.classList.toggle("active", i === currentSlide));
-  }
-}
-
-function startHeroRotation() {
-  heroInterval = setInterval(() => {
-    goToSlide((currentSlide + 1) % slides.length);
-  }, 5000);
-}
-
-if (heroDotsContainer && slides.length) {
-  slides.forEach((_, i) => {
-    const dot = document.createElement("button");
-    dot.className = "hero-dot" + (i === 0 ? " active" : "");
-    dot.setAttribute("aria-label", `Go to slide ${i + 1}`);
-    dot.addEventListener("click", () => {
-      clearInterval(heroInterval);
-      goToSlide(i);
-      startHeroRotation();
-    });
-    heroDotsContainer.appendChild(dot);
+    await renderAnime(filtered);
   });
-}
+});
 
-startHeroRotation();
+featuredButton?.addEventListener("click", () => {
+  document.getElementById("continue-watching")?.scrollIntoView({
+    behavior: "smooth"
+  });
+});
+
+window.addEventListener("scroll", () => {
+  if (!navbar) return;
+  navbar.classList.toggle("navbar-shrink", window.scrollY > 24);
+});
+
 document
-  .querySelectorAll(
-    ".terminal-grid button"
-  )
+  .querySelectorAll(".terminal-grid button")
   .forEach(button => {
-
     button.onclick = () => {
-
-      const command =
-        button.textContent;
+      const command = button.textContent;
 
       if (command === "/watching") {
-        document
-          .getElementById(
-            "continue-watching"
-          )
-          ?.scrollIntoView({
-            behavior: "smooth"
-          });
+        document.getElementById("continue-watching")?.scrollIntoView({
+          behavior: "smooth"
+        });
       }
 
       if (command === "/stats") {
-        window.location.href =
-          "/stats.html";
+        window.location.href = "/stats.html";
       }
 
       if (command === "/library") {
-        document
-          .getElementById(
-            "anime-list"
-          )
-          ?.scrollIntoView({
-            behavior: "smooth"
-          });
+        document.getElementById("anime-list")?.scrollIntoView({
+          behavior: "smooth"
+        });
       }
 
       if (command === "/random") {
-
         if (!allAnime.length) {
           return;
         }
 
-        const random =
-          allAnime[
-            Math.floor(
-              Math.random() *
-              allAnime.length
-            )
-          ];
+        const random = allAnime[Math.floor(Math.random() * allAnime.length)];
 
         if (random.url) {
-          window.open(
-            random.url,
-            "_blank"
-          );
+          window.open(random.url, "_blank");
         }
       }
     };
@@ -431,44 +415,25 @@ document
 function updateClock() {
   const now = new Date();
 
-  const clock =
-    document.getElementById(
-      "clock"
-    );
-
-  const date =
-    document.getElementById(
-      "date"
-    );
+  const clock = document.getElementById("clock");
+  const date = document.getElementById("date");
 
   if (!clock) return;
 
-  clock.textContent =
-    now.toLocaleTimeString(
-      [],
-      {
-        hour: "2-digit",
-        minute: "2-digit"
-      }
-    );
+  clock.textContent = now.toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit"
+  });
 
-  date.textContent =
-    now.toLocaleDateString(
-      [],
-      {
-        weekday: "long",
-        month: "long",
-        day: "numeric"
-      }
-    );
+  date.textContent = now.toLocaleDateString([], {
+    weekday: "long",
+    month: "long",
+    day: "numeric"
+  });
 }
 
 updateClock();
-
-setInterval(
-  updateClock,
-  1000
-);
+setInterval(updateClock, 1000);
 
 /* =========================
    DYNAMIC WALLPAPER SYSTEM
@@ -489,9 +454,9 @@ const themes = {
   },
   kdramaMood: {
     name: "K-Drama Mood",
-    bg: "#1E1B4B",
-    bg2: "#2D2563",
-    primary: "#8B5CF6",
+    bg: "#111827",
+    bg2: "#1E2937",
+    primary: "#EC4899",
     secondary: "#F472B6",
     accent: "#F8FAFC",
     text: "#FFFFFF",
@@ -501,7 +466,7 @@ const themes = {
   },
   cinemaMode: {
     name: "Cinema Mode",
-    bg: "#0F172A",
+    bg: "#0B0F19",
     bg2: "#1E293B",
     primary: "#EAB308",
     secondary: "#EF4444",
@@ -515,7 +480,7 @@ const themes = {
     name: "Cyberpunk",
     bg: "#050816",
     bg2: "#0A1020",
-    primary: "#00FFFF",
+    primary: "#00E5FF",
     secondary: "#FF00FF",
     accent: "#7C5CFF",
     text: "#FFFFFF",
@@ -533,23 +498,13 @@ const themes = {
     text: "#FFFFFF",
     textMuted: "#9CA3AF",
     border: "rgba(255,255,255,.05)",
-    wallpaper: "/images/frieren.jpg"
+    wallpaper: null
   }
 };
 
 function setTheme(themeKey) {
   const theme = themes[themeKey];
   if (!theme) return;
-
-  const heroPanel = document.querySelector(".hero-panel");
-  if (heroPanel) {
-    heroPanel.style.background = `
-      linear-gradient(rgba(0,0,0,.4), rgba(0,0,0,.85)),
-      url("${theme.wallpaper}")
-    `;
-    heroPanel.style.backgroundSize = "cover";
-    heroPanel.style.backgroundPosition = "center";
-  }
 
   document.documentElement.style.setProperty("--bg", theme.bg);
   document.documentElement.style.setProperty("--bg2", theme.bg2);
@@ -577,140 +532,377 @@ loadSavedTheme();
 ========================= */
 
 const featuredMedia = [
+  // --- ANIME (Purple accented) ---
   {
     title: "Solo Leveling",
     desc: "The weakest hunter becomes humanity's strongest weapon.",
-    image: "/images/solo-leveling.jpg",
-    type: "Anime"
+    category: "Anime",
+    wallpaper: "https://images.unsplash.com/photo-1518837695005-2083093ee35b?w=1600&q=80",
+    poster: "https://cdn.myanimelist.net/images/anime/1901/139991.jpg",
+    accentColor: "#7C5CFF",
+    buttonText: "▶ Continue",
+    rating: "9.7",
+    imdb: "8.5",
+    duration: "24 Episodes",
+    episodes: "24 Episodes",
+    studio: "A-1 Pictures",
+    status: "airing",
+    genres: ["Action", "Fantasy", "Supernatural"]
   },
+  {
+    title: "Frieren: Beyond Journey's End",
+    desc: "A beautiful journey after the hero's adventure ends.",
+    category: "Anime",
+    wallpaper: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1600&q=80",
+    poster: "https://cdn.myanimelist.net/images/anime/1015/138006.jpg",
+    accentColor: "#8B5CF6",
+    buttonText: "▶ Explore",
+    rating: "9.1",
+    imdb: "8.9",
+    duration: "28 Episodes",
+    episodes: "28 Episodes",
+    studio: "Madhouse",
+    status: "airing",
+    genres: ["Adventure", "Fantasy", "Drama"]
+  },
+  {
+    title: "Demon Slayer",
+    desc: "A boy hunts demons to restore his family and cure his sister.",
+    category: "Anime",
+    wallpaper: "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=1600&q=80",
+    poster: "https://cdn.myanimelist.net/images/anime/1286/99889.jpg",
+    accentColor: "#5EEAD4",
+    buttonText: "▶ Watch Now",
+    rating: "9.3",
+    imdb: "8.7",
+    duration: "63 Episodes",
+    episodes: "63 Episodes",
+    studio: "ufotable",
+    status: "completed",
+    genres: ["Action", "Supernatural", "Adventure"]
+  },
+  // --- MOVIES (Gold accented) ---
   {
     title: "Interstellar",
     desc: "Love transcends dimensions and time.",
-    image: "/images/classroom.jpg",
-    type: "Movie"
-  },
-  {
-    title: "Lovely Runner",
-    desc: "A time travel romance that changes destiny.",
-    image: "/images/frieren.jpg",
-    type: "K-Drama"
-  },
-  {
-    title: "Frieren",
-    desc: "A beautiful journey after the hero's adventure ends.",
-    image: "/images/frieren.jpg",
-    type: "Anime"
+    category: "Movie",
+    wallpaper: "https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?w=1600&q=80",
+    poster: "https://m.media-amazon.com/images/M/MV5BZjdkOTU3MDktN2IxOS00OGEyLWFmMjktY2FiMmZkNWIyODZiXkEyXkFqcGdeQXVyMTMxODk2OTU@._V1_.jpg",
+    accentColor: "#FBBF24",
+    buttonText: "▶ Watch Trailer",
+    rating: "9.0",
+    imdb: "8.7",
+    duration: "2h 49m",
+    episodes: "2h 49m",
+    studio: "Warner Bros.",
+    status: "completed",
+    genres: ["Sci-Fi", "Adventure", "Drama"]
   },
   {
     title: "The Batman",
     desc: "Vengeance becomes hope.",
-    image: "/images/solo-leveling.jpg",
-    type: "Movie"
+    category: "Movie",
+    wallpaper: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=1600&q=80",
+    poster: "https://m.media-amazon.com/images/M/MV5BMDdmMTBiNTYtMDIzNi00NGVlLWIzMDYtZTk3MTQ3NGQxZGEwXkEyXkFqcGdeQXVyMzMwOTU5MDk@._V1_.jpg",
+    accentColor: "#F97316",
+    buttonText: "▶ Explore",
+    rating: "8.3",
+    imdb: "7.8",
+    duration: "2h 56m",
+    episodes: "2h 56m",
+    studio: "DC Studios",
+    status: "completed",
+    genres: ["Action", "Crime", "Thriller"]
   },
   {
-    title: "Twenty Five Twenty One",
-    desc: "Youth, dreams and first love.",
-    image: "/images/solo-leveling.jpg",
-    type: "K-Drama"
+    title: "John Wick: Chapter 4",
+    desc: "The Baba Yaga returns with unstoppable force.",
+    category: "Movie",
+    wallpaper: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=1600&q=80",
+    poster: "https://m.media-amazon.com/images/M/MV5BMDExZGMyOTMtYjRjYi00NDQzLWJhNTktZDVmZTc5M2YyNzcyXkEyXkFqcGdeQXVyMjM4NTMxNDY@._V1_.jpg",
+    accentColor: "#F97316",
+    buttonText: "▶ Continue",
+    rating: "7.9",
+    imdb: "7.7",
+    duration: "2h 49m",
+    episodes: "2h 49m",
+    studio: "Lionsgate",
+    status: "completed",
+    genres: ["Action", "Thriller", "Crime"]
+  },
+  // --- TV SERIES (Blue accented) ---
+  {
+    title: "Breaking Bad",
+    desc: "A high school teacher turns to crime after a shocking diagnosis.",
+    category: "TV",
+    wallpaper: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=1600&q=80",
+    poster: "https://m.media-amazon.com/images/M/MV5BYmQ4YWMxYzUtZjZmYi00ZWQzLWE4MzItYWE1YzE2Njc1Y2I0XkEyXkFqcGdeQXVyMTkxNjUyNQ@@._V1_.jpg",
+    accentColor: "#3B82F6",
+    buttonText: "▶ Start Watching",
+    rating: "9.5",
+    imdb: "9.5",
+    duration: "62 Episodes",
+    episodes: "62 Episodes",
+    studio: "AMC",
+    status: "completed",
+    genres: ["Crime", "Drama", "Thriller"]
   },
   {
-    title: "Blue Lock",
-    desc: "Ego and football collide.",
-    image: "/images/solo-leveling.jpg",
-    type: "Anime"
+    title: "The Last of Us",
+    desc: "A hardened survivor protects a girl who may be humanity's last hope.",
+    category: "TV",
+    wallpaper: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=1600&q=80",
+    poster: "https://m.media-amazon.com/images/M/MV5BZGUzYTI3NjctYjU0Yi00NjRkLTkwZjItZjY5ZTg3Y2Q0NTVkXkEyXkFqcGdeQXVyMTMxODk2OTU@._V1_.jpg",
+    accentColor: "#2563EB",
+    buttonText: "▶ Resume",
+    rating: "9.1",
+    imdb: "8.8",
+    duration: "18 Episodes",
+    episodes: "18 Episodes",
+    studio: "HBO",
+    status: "returning",
+    genres: ["Drama", "Adventure", "Thriller"]
   },
-  {
-    title: "Dune",
-    desc: "Fear is the mind killer.",
-    image: "/images/classroom.jpg",
-    type: "Movie"
-  },
-  {
-    title: "Squid Game",
-    desc: "A deadly game for survival.",
-    image: "/images/classroom.jpg",
-    type: "K-Drama"
-  },
-  {
-    title: "Attack on Titan",
-    desc: "Humanity fights for survival against the Titans.",
-    image: "/images/solo-leveling.jpg",
-    type: "Anime"
-  },
-  {
-    title: "Oppenheimer",
-    desc: "The father of the atomic bomb.",
-    image: "/images/classroom.jpg",
-    type: "Movie"
-  },
+  // --- K-DRAMA (Pink accented) ---
   {
     title: "Weak Hero Class 1",
-    desc: "A bullied student fights back with strategy.",
-    image: "/images/solo-leveling.jpg",
-    type: "K-Drama"
+    desc: "A bullied student fights back with strategy and resolve.",
+    category: "K-Drama",
+    wallpaper: "https://images.unsplash.com/photo-1516410529446-2c777cb7366d?w=1600&q=80",
+    poster: "https://m.media-amazon.com/images/M/MV5BYmZkNDJkNTMtZGViYS00YjZmLTg3MTMtMzVhODk4MzIyYmZmXkEyXkFqcGdeQXVyMTE1MzI3NzIx._V1_.jpg",
+    accentColor: "#EC4899",
+    buttonText: "▶ Resume",
+    rating: "8.8",
+    imdb: "8.6",
+    duration: "12 Episodes",
+    episodes: "12 Episodes",
+    studio: "Wavve",
+    status: "completed",
+    genres: ["Action", "Drama", "School"]
+  },
+  {
+    title: "Kingdom",
+    desc: "A crown prince fights to save his kingdom from a dark plague.",
+    category: "K-Drama",
+    wallpaper: "https://images.unsplash.com/photo-1516205651411-8470b0e32669?w=1600&q=80",
+    poster: "https://m.media-amazon.com/images/M/MV5BMjE0MzA3NTUtZjE5My00YzZkLWIzN2YtMjc1NTYyNDhiNTc4XkEyXkFqcGdeQXVyMTMxODk2OTU@._V1_.jpg",
+    accentColor: "#F43F5E",
+    buttonText: "▶ Watch Now",
+    rating: "8.9",
+    imdb: "8.3",
+    duration: "2 Seasons",
+    episodes: "2 Seasons",
+    studio: "Netflix",
+    status: "returning",
+    genres: ["Historical", "Horror", "Action"]
+  },
+  {
+    title: "Moving",
+    desc: "Hidden powers, family secrets, and a world on the brink.",
+    category: "K-Drama",
+    wallpaper: "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=1600&q=80",
+    poster: "https://m.media-amazon.com/images/M/MV5BZjM5YjhkOTEtYTVkYy00OTJhLThjOWEtNDdiMDVmNWUyM2QzXkEyXkFqcGdeQXVyMTE1MzI3NzIx._V1_.jpg",
+    accentColor: "#F43F5E",
+    buttonText: "▶ Continue",
+    rating: "8.5",
+    imdb: "8.1",
+    duration: "12 Episodes",
+    episodes: "12 Episodes",
+    studio: "Disney+",
+    status: "completed",
+    genres: ["Action", "Drama", "Sci-Fi"]
+  },
+  {
+    title: "Vincenzo",
+    desc: "A consigliere takes on a corrupt conglomerate with clever fire.",
+    category: "K-Drama",
+    wallpaper: "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=1600&q=80",
+    poster: "https://m.media-amazon.com/images/M/MV5BZjQxYzBlYTQtMzQzYy00YjUyLTgxNTUtYzQzODA5YzExZDRmXkEyXkFqcGdeQXVyMTE1MzI3NzIx._V1_.jpg",
+    accentColor: "#F97316",
+    buttonText: "▶ Resume",
+    rating: "8.7",
+    imdb: "8.4",
+    duration: "20 Episodes",
+    episodes: "20 Episodes",
+    studio: "tvN",
+    status: "completed",
+    genres: ["Crime", "Drama", "Comedy"]
   }
 ];
 
-const heroPanel = document.querySelector(".hero-panel");
-const featuredTitle = document.getElementById("featured-title");
-const featuredDesc = document.getElementById("featured-desc");
-const heroTag = document.querySelector(".hero-tag");
+let featuredIndex = Math.floor(Math.random() * featuredMedia.length);
+let activeBackground = heroBackgroundFront;
+let heroHistoryTitles = new Set();
 
-console.log("Featured elements:", { heroPanel, featuredTitle, featuredDesc, heroTag });
+function preloadImage(src) {
+  return new Promise((resolve) => {
+    if (!src) {
+      resolve();
+      return;
+    }
 
-let featuredIndex = 0;
+    const image = new Image();
+    image.onload = () => resolve();
+    image.onerror = () => resolve();
+    image.src = src;
+  });
+}
 
-function updateFeatured() {
-  console.log("updateFeatured called, index:", featuredIndex);
-  if (!heroPanel || !featuredTitle || !featuredDesc || !heroTag) {
-    console.error("Missing elements:", { heroPanel, featuredTitle, featuredDesc, heroTag });
+function getCategoryClass(category) {
+  const normalized = category.toLowerCase().trim();
+  if (normalized.includes("movie")) return "category-movie";
+  if (normalized.includes("k-drama")) return "category-k-drama";
+  if (normalized.includes("tv")) return "category-tv";
+  if (normalized.includes("anime")) return "category-anime";
+  return `category-${normalized.replace(/\s+/g, "-")}`;
+}
+
+function getCategoryAccentColor(category) {
+  const normalized = category.toLowerCase().trim();
+  if (normalized.includes("movie")) return "#FBBF24";
+  if (normalized.includes("k-drama")) return "#EC4899";
+  if (normalized.includes("tv")) return "#3B82F6";
+  return "#7C5CFF";
+}
+
+function clearCategoryClasses(element) {
+  if (!element) return;
+  Array.from(element.classList).forEach(cls => {
+    if (cls.startsWith("category-")) {
+      element.classList.remove(cls);
+    }
+  });
+}
+
+function setHeroBackground(imageUrl) {
+  if (!heroBackgroundFront || !heroBackgroundBack) {
+    return;
+  }
+
+  const nextBackground = activeBackground === heroBackgroundFront ? heroBackgroundBack : heroBackgroundFront;
+  nextBackground.style.backgroundImage = `linear-gradient(rgba(0,0,0,0.2), rgba(0,0,0,0.7)), url("${imageUrl}")`;
+  nextBackground.classList.add("visible");
+  activeBackground.classList.remove("visible");
+  activeBackground = nextBackground;
+}
+
+function renderGenreChips(genres) {
+  if (!featuredGenres) return;
+  featuredGenres.innerHTML = genres
+    .map(genre => `<span class="genre-chip">${genre}</span>`)
+    .join("");
+}
+
+function refreshWatchHistory() {
+  heroHistoryTitles = new Set(
+    allAnime.map((anime) => (anime.animeTitle || "").toLowerCase())
+  );
+}
+
+async function updateFeatured() {
+  if (
+    !heroPanel ||
+    !heroOverlay ||
+    !featuredTitle ||
+    !featuredDesc ||
+    !featuredCategory ||
+    !featuredRating ||
+    !featuredDuration ||
+    !featuredEpisodes ||
+    !featuredImdb ||
+    !featuredGenres ||
+    !featuredStudio ||
+    !featuredButton ||
+    !heroTag
+  ) {
     return;
   }
 
   const item = featuredMedia[featuredIndex];
-
-  featuredTitle.textContent = item.title;
-  featuredDesc.textContent = item.desc;
-  heroTag.textContent = item.type;
-
-  // Category-specific glow effects
-  if (item.type === "Anime") {
-    heroPanel.style.boxShadow = "0 25px 60px rgba(0,0,0,.5), 0 0 120px rgba(124,92,255,.3)";
-    heroTag.style.background = "rgba(124, 92, 255, 0.3)";
-    heroTag.style.borderColor = "rgba(124, 92, 255, 0.5)";
-    heroTag.style.color = "#5eead4";
-  } else if (item.type === "Movie") {
-    heroPanel.style.boxShadow = "0 25px 60px rgba(0,0,0,.5), 0 0 120px rgba(234, 179, 8, 0.3)";
-    heroTag.style.background = "rgba(234, 179, 8, 0.3)";
-    heroTag.style.borderColor = "rgba(234, 179, 8, 0.5)";
-    heroTag.style.color = "#f8fafc";
-  } else if (item.type === "K-Drama") {
-    heroPanel.style.boxShadow = "0 25px 60px rgba(0,0,0,.5), 0 0 120px rgba(255, 107, 154, 0.3)";
-    heroTag.style.background = "rgba(255, 107, 154, 0.3)";
-    heroTag.style.borderColor = "rgba(255, 107, 154, 0.5)";
-    heroTag.style.color = "#f8fafc";
+  if (!item) {
+    return;
   }
 
-  heroPanel.style.background = `
-    linear-gradient(rgba(0,0,0,.4), rgba(0,0,0,.85)),
-    url(${item.image})
-  `;
-  heroPanel.style.backgroundSize = "cover";
-  heroPanel.style.backgroundPosition = "center";
+  const categoryClass = getCategoryClass(item.category);
+
+  clearCategoryClasses(heroPanel);
+  heroPanel.classList.add(categoryClass);
+  heroOverlay.classList.add("fade-out");
+
+  await preloadImage(item.wallpaper);
+  setHeroBackground(item.wallpaper);
+
+  // Preload poster
+  if (heroPosterImg && item.poster) {
+    heroPosterImg.style.backgroundImage = `url("${item.poster}")`;
+  }
+
+  setTimeout(() => {
+    heroTag.textContent = item.category;
+    featuredCategory.textContent = item.category;
+    featuredTitle.textContent = item.title;
+    featuredDesc.textContent = item.desc;
+    featuredRating.textContent = `★★★★★ ${item.rating}`;
+    featuredDuration.textContent = item.duration;
+    featuredEpisodes.textContent = item.episodes;
+    featuredImdb.textContent = item.imdb;
+
+    // Status
+    const statusColor = item.status === "airing" || item.status === "returning" ? "#22c55e" : "#94a3b8";
+    const statusLabel = item.status === "airing" ? "Airing" : item.status === "returning" ? "Returning" : "Completed";
+    if (featuredStatus) {
+      featuredStatus.style.background = statusColor;
+      featuredStatus.style.boxShadow = `0 0 6px ${statusColor}80`;
+    }
+    if (featuredStatusLabel) {
+      featuredStatusLabel.textContent = statusLabel;
+      featuredStatusLabel.style.color = statusColor;
+    }
+
+    // Studio
+    if (featuredStudio) {
+      featuredStudio.textContent = item.studio;
+    }
+
+    // Button
+    featuredButton.textContent = item.buttonText;
+    featuredButton.style.boxShadow = `0 8px 30px ${item.accentColor}55`;
+
+    // Tag style
+    heroTag.style.borderColor = `${item.accentColor}40`;
+    heroTag.style.background = `${item.accentColor}15`;
+    heroTag.style.color = getCategoryAccentColor(item.category);
+
+    renderGenreChips(item.genres);
+    heroOverlay.classList.remove("fade-out");
+  }, 220);
 }
+
+function handleHeroParallax(event) {
+  if (!heroBackgroundFront || !heroBackgroundBack || !heroPanel) return;
+  const { left, top, width, height } = heroPanel.getBoundingClientRect();
+  const x = ((event.clientX - left) / width - 0.5) * 18;
+  const y = ((event.clientY - top) / height - 0.5) * 14;
+
+  heroBackgroundFront.style.transform = `translate3d(${x}px, ${y}px, 0) scale(1.06)`;
+  heroBackgroundBack.style.transform = `translate3d(${x * 0.6}px, ${y * 0.6}px, 0) scale(1.05)`;
+}
+
+function resetHeroParallax() {
+  if (!heroBackgroundFront || !heroBackgroundBack) return;
+  heroBackgroundFront.style.transform = "scale(1.05)";
+  heroBackgroundBack.style.transform = "scale(1.05)";
+}
+
+heroPanel?.addEventListener("mousemove", handleHeroParallax);
+heroPanel?.addEventListener("mouseleave", resetHeroParallax);
 
 updateFeatured();
 
-setInterval(() => {
-  console.log("Interval fired, incrementing index");
-  featuredIndex++;
-  if (featuredIndex >= featuredMedia.length) {
-    featuredIndex = 0;
-  }
-  updateFeatured();
-}, 7000);
-
-console.log("Featured rotation initialized, will update every 7 seconds");
+setInterval(async () => {
+  featuredIndex = (featuredIndex + 1) % featuredMedia.length;
+  await updateFeatured();
+}, 8000);
 
 /* =========================
    ROTATING QUOTES
@@ -718,25 +910,25 @@ console.log("Featured rotation initialized, will update every 7 seconds");
 
 const quotes = {
   anime: [
-    "No matter how deep the night, it always turns to day. - Bleach",
-    "People die when they are killed. - Fate/stay night",
-    "I'm not a hero because I want your approval. I do it because I want to. - My Hero Academia",
-    "The world isn't perfect. But it's there for us, doing the best it can. - Fruits Basket",
-    "Whatever you lose, you'll find it again. But what you throw away you'll never get back. - Baccano!"
+    "No matter how deep the night, it always turns to day. — Bleach",
+    "People die when they are killed. — Fate/stay night",
+    "I'm not a hero because I want your approval. I do it because I want to. — My Hero Academia",
+    "The world isn't perfect. But it's there for us, doing the best it can. — Fruits Basket",
+    "Whatever you lose, you'll find it again. But what you throw away you'll never get back. — Baccano!"
   ],
   movies: [
-    "After all, tomorrow is another day. - Gone with the Wind",
-    "Here's looking at you, kid. - Casablanca",
-    "May the Force be with you. - Star Wars",
-    "I'm going to make him an offer he can't refuse. - The Godfather",
-    "You can't handle the truth! - A Few Good Men"
+    "After all, tomorrow is another day. — Gone with the Wind",
+    "Here's looking at you, kid. — Casablanca",
+    "May the Force be with you. — Star Wars",
+    "I'm going to make him an offer he can't refuse. — The Godfather",
+    "You can't handle the truth! — A Few Good Men"
   ],
   kdrama: [
-    "Fate is like a strange restaurant. - Crash Landing on You",
-    "Love is not about timing. It's about the right person. - Lovestruck in the City",
-    "Don't regret the past. Just learn from it. - Reply 1988",
-    "Sometimes the wrong choices bring us to the right places. - Itaewon Class",
-    "Being strong means having the courage to show weakness. - Hospital Playlist"
+    "Fate is like a strange restaurant. — Crash Landing on You",
+    "Love is not about timing. It's about the right person. — Lovestruck in the City",
+    "Don't regret the past. Just learn from it. — Reply 1988",
+    "Sometimes the wrong choices bring us to the right places. — Itaewon Class",
+    "Being strong means having the courage to show weakness. — Hospital Playlist"
   ]
 };
 
@@ -822,7 +1014,6 @@ function setAtmosphericEffect(effect) {
   }
 }
 
-// Auto-enable sakura for Anime Night theme
 const savedTheme = localStorage.getItem("mediavault-theme");
 if (savedTheme === "animeNight") {
   setTimeout(() => setAtmosphericEffect("sakura"), 1000);
@@ -837,17 +1028,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const themeDropdown = document.getElementById("theme-dropdown");
   const themeOptions = document.querySelectorAll(".theme-option");
 
-  console.log("Theme toggle:", themeToggle);
-  console.log("Theme dropdown:", themeDropdown);
-  console.log("Theme options:", themeOptions);
-
   if (themeToggle && themeDropdown) {
     themeToggle.addEventListener("click", (e) => {
       e.preventDefault();
-      console.log("Toggle clicked");
       themeDropdown.classList.toggle("active");
-      console.log("Dropdown classes:", themeDropdown.className);
-      console.log("Dropdown display:", window.getComputedStyle(themeDropdown).display);
     });
 
     document.addEventListener("click", (e) => {
@@ -859,13 +1043,10 @@ document.addEventListener("DOMContentLoaded", () => {
     themeOptions.forEach((option) => {
       option.addEventListener("click", () => {
         const themeKey = option.dataset.theme;
-        console.log("Theme selected:", themeKey);
         setTheme(themeKey);
         themeDropdown.classList.remove("active");
       });
     });
-  } else {
-    console.error("Theme toggle or dropdown not found!");
   }
 });
 
@@ -975,3 +1156,38 @@ commandPalette.addEventListener("click", (e) => {
     closeCommandPalette();
   }
 });
+
+/* =========================
+   WIDGET MICRO-ANIMATIONS
+========================= */
+
+// Streak counter update (animated on load)
+const streakEl = document.getElementById("current-streak");
+if (streakEl) {
+  let streak = parseInt(localStorage.getItem("mediavault-streak") || "0");
+  if (streak === 0) {
+    streak = Math.floor(Math.random() * 7) + 3; // demo: 3-9 days
+  }
+  const target = streak;
+  let current = 0;
+  const interval = setInterval(() => {
+    current++;
+    streakEl.textContent = current;
+    if (current >= target) clearInterval(interval);
+  }, 80);
+}
+
+// Goal bar
+const goalFill = document.getElementById("goal-bar-fill");
+const goalText = document.getElementById("watch-goal");
+if (goalFill && goalText) {
+  const watched = allAnime.length;
+  const goal = 100;
+  const pct = Math.min((watched / goal) * 100, 100);
+  setTimeout(() => {
+    goalFill.style.width = pct + "%";
+  }, 500);
+  if (goalText) {
+    goalText.textContent = `${watched} / ${goal} episodes`;
+  }
+}

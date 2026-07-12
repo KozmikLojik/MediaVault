@@ -8,355 +8,492 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
-    href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Playfair+Display:ital@1&display=swap"
     rel="stylesheet"
   />
 
   <title>MediaVault OS</title>
 </head>
-
 <body>
 
+<!-- ===== CINEMATIC BACKGROUND ===== -->
 <div class="aurora-bg">
   <div class="aurora-gradient"></div>
+
   <div class="floating-glow purple"></div>
   <div class="floating-glow cyan"></div>
   <div class="floating-glow pink"></div>
+  <div class="floating-glow orange"></div>
+  <div class="floating-glow blue"></div>
+  <div class="floating-glow green"></div>
+  <div class="floating-glow red"></div>
+
   <div class="particles">
-    <div class="particle"></div>
-    <div class="particle"></div>
-    <div class="particle"></div>
-    <div class="particle"></div>
-    <div class="particle"></div>
-    <div class="particle"></div>
-    <div class="particle"></div>
-    <div class="particle"></div>
-    <div class="particle"></div>
-    <div class="particle"></div>
+    <div class="particle"></div><div class="particle"></div>
+    <div class="particle"></div><div class="particle"></div>
+    <div class="particle"></div><div class="particle"></div>
+    <div class="particle"></div><div class="particle"></div>
+    <div class="particle"></div><div class="particle"></div>
+    <div class="particle"></div><div class="particle"></div>
+    <div class="particle"></div><div class="particle"></div>
+    <div class="particle"></div><div class="particle"></div>
+    <div class="particle"></div><div class="particle"></div>
+    <div class="particle"></div><div class="particle"></div>
+    <div class="particle"></div><div class="particle"></div>
+    <div class="particle"></div><div class="particle"></div>
+    <div class="particle"></div><div class="particle"></div>
+    <div class="particle"></div><div class="particle"></div>
+    <div class="particle"></div><div class="particle"></div>
+    <div class="particle"></div><div class="particle"></div>
+    <div class="particle"></div><div class="particle"></div>
+    <div class="particle"></div><div class="particle"></div>
+    <div class="particle"></div><div class="particle"></div>
+    <div class="particle"></div><div class="particle"></div>
+    <div class="particle"></div><div class="particle"></div>
+    <div class="particle"></div><div class="particle"></div>
+    <div class="particle"></div><div class="particle"></div>
+    <div class="particle"></div><div class="particle"></div>
+    <div class="particle"></div><div class="particle"></div>
+    <div class="particle"></div><div class="particle"></div>
+    <div class="particle"></div><div class="particle"></div>
+    <div class="particle"></div><div class="particle"></div>
+    <div class="particle"></div><div class="particle"></div>
+    <div class="particle"></div><div class="particle"></div>
   </div>
+
   <div class="animated-stars">
-    <div class="star"></div>
-    <div class="star"></div>
-    <div class="star"></div>
-    <div class="star"></div>
-    <div class="star"></div>
-    <div class="star"></div>
-    <div class="star"></div>
-    <div class="star"></div>
-    <div class="star"></div>
-    <div class="star"></div>
-    <div class="star"></div>
-    <div class="star"></div>
-    <div class="star"></div>
-    <div class="star"></div>
-    <div class="star"></div>
+    <div class="star"></div><div class="star"></div><div class="star"></div>
+    <div class="star"></div><div class="star"></div><div class="star"></div>
+    <div class="star"></div><div class="star"></div><div class="star"></div>
+    <div class="star"></div><div class="star"></div><div class="star"></div>
+    <div class="star"></div><div class="star"></div><div class="star"></div>
+    <div class="star"></div><div class="star"></div><div class="star"></div>
+    <div class="star"></div><div class="star"></div><div class="star"></div>
+    <div class="star"></div><div class="star"></div><div class="star"></div>
+    <div class="star"></div><div class="star"></div><div class="star"></div>
+    <div class="star"></div><div class="star"></div><div class="star"></div>
+    <div class="star"></div><div class="star"></div><div class="star"></div>
+    <div class="star"></div><div class="star"></div><div class="star"></div>
+    <div class="star"></div><div class="star"></div><div class="star"></div>
+    <div class="star"></div><div class="star"></div><div class="star"></div>
+    <div class="star"></div><div class="star"></div><div class="star"></div>
   </div>
+
+  <div class="vignette-overlay"></div>
+  <div class="cinematic-blur"></div>
+  <div class="grain-overlay"></div>
+
   <div class="atmospheric-effects" id="atmospheric-effects"></div>
+
+<!-- ===== PREMIUM GLASS NAVBAR ===== -->
+<nav class="navbar">
+  <div class="nav-brand">
+    <div class="nav-logo">🎞 MediaVault OS</div>
+  </div>
+  <div class="nav-links">
+    <a class="nav-item active" href="#">
+      <span class="nav-icon">🏠</span>
+      <span>Home</span>
+      <span class="nav-indicator"></span>
+    </a>
+    <a class="nav-item" href="#">
+      <span class="nav-icon">📚</span>
+      <span>Library</span>
+      <span class="nav-indicator"></span>
+    </a>
+    <a class="nav-item" href="/stats.html">
+      <span class="nav-icon">📊</span>
+      <span>Statistics</span>
+      <span class="nav-indicator"></span>
+    </a>
+    <a class="nav-item" href="#" id="theme-toggle">
+      <span class="nav-icon">🎨</span>
+      <span>Appearance</span>
+      <span class="nav-indicator"></span>
+    </a>
+    <span id="nav-user" class="nav-user"></span>
+    <a class="nav-item" href="#" id="logout-btn">
+      <span class="nav-icon">🚪</span>
+      <span>Logout</span>
+      <span class="nav-indicator"></span>
+    </a>
+    <a class="nav-item" href="https://github.com/KozmikLojik/MediaVault" target="_blank">
+      <span class="nav-icon">🐙</span>
+      <span>GitHub</span>
+      <span class="nav-indicator"></span>
+    </a>
+  </div>
+  <div class="nav-glow"></div>
+</nav>
+
+<!-- Theme Dropdown -->
+<div id="theme-dropdown" class="theme-dropdown">
+  <div class="theme-option" data-theme="animeNight">
+    <span class="theme-preview anime-night"></span>
+    <span class="theme-name">Anime Night</span>
+  </div>
+  <div class="theme-option" data-theme="kdramaMood">
+    <span class="theme-preview kdrama-mood"></span>
+    <span class="theme-name">K-Drama Mood</span>
+  </div>
+  <div class="theme-option" data-theme="cinemaMode">
+    <span class="theme-preview cinema-mode"></span>
+    <span class="theme-name">Cinema Mode</span>
+  </div>
+  <div class="theme-option" data-theme="cyberpunk">
+    <span class="theme-preview cyberpunk"></span>
+    <span class="theme-name">Cyberpunk</span>
+  </div>
+  <div class="theme-option" data-theme="minimal">
+    <span class="theme-preview minimal"></span>
+    <span class="theme-name">Minimal</span>
+  </div>
 </div>
 
-  <nav class="navbar">
-    <div class="nav-logo">🎞 MediaVault OS</div>
-    <div class="nav-links">
-      <a class="active" href="#">Home</a>
-      <a href="#">Library</a>
-      <a href="/stats.html">Statistics</a>
-      <a href="#" id="theme-toggle">⚙ Appearance</a>
-      <span id="nav-user" class="nav-user"></span>
-      <a href="#" id="logout-btn">Logout</a>
-      <a href="https://github.com/KozmikLojik/MediaVault" target="_blank">GitHub</a>
-    </div>
-  </nav>
+<!-- ===== MAIN CONTENT ===== -->
+<div class="page-container">
 
-  <div id="theme-dropdown" class="theme-dropdown">
-    <div class="theme-option" data-theme="animeNight">
-      <span class="theme-preview anime-night"></span>
-      <span class="theme-name">Anime Night</span>
-    </div>
-    <div class="theme-option" data-theme="kdramaMood">
-      <span class="theme-preview kdrama-mood"></span>
-      <span class="theme-name">K-Drama Mood</span>
-    </div>
-    <div class="theme-option" data-theme="cinemaMode">
-      <span class="theme-preview cinema-mode"></span>
-      <span class="theme-name">Cinema Mode</span>
-    </div>
-    <div class="theme-option" data-theme="cyberpunk">
-      <span class="theme-preview cyberpunk"></span>
-      <span class="theme-name">Cyberpunk</span>
-    </div>
-    <div class="theme-option" data-theme="minimal">
-      <span class="theme-preview minimal"></span>
-      <span class="theme-name">Minimal</span>
-    </div>
-  </div>
+  <!-- BENTO DASHBOARD: HERO + SIDEBAR -->
+  <header class="bento-dashboard">
 
-  <div class="page-container">
+    <!-- CINEMATIC FEATURED HERO -->
+    <section class="hero-panel category-anime">
+      <div class="hero-background hero-background-back"></div>
+      <div class="hero-background hero-background-front visible"></div>
 
-    <header class="bento-dashboard">
+      <!-- Floating poster -->
+      <div class="hero-poster" id="hero-poster">
+        <div class="hero-poster-img"></div>
+        <div class="hero-poster-shine"></div>
+      </div>
 
-      <section class="hero-panel">
+      <div class="hero-overlay">
+        <!-- Top badge row -->
+        <div class="hero-top-row">
+          <span class="featured-badge">✦ FEATURED</span>
+          <span class="hero-tag" id="featured-category">Anime</span>
+        </div>
 
-        <div class="hero-overlay">
+        <!-- Title -->
+        <h1 id="featured-title">Solo Leveling</h1>
 
-          <p class="featured-type">
-            Now Screening
-          </p>
+        <!-- Description -->
+        <p id="featured-desc">The weakest hunter becomes humanity's strongest weapon.</p>
 
-          <span class="hero-tag">
-            Anime
+        <!-- Meta row: IMDb, Rating, Duration, Episodes -->
+        <div class="hero-meta">
+          <span class="hero-meta-item imdb-badge">
+            <span class="imdb-logo">IMDb</span>
+            <span id="featured-imdb">8.9</span>
           </span>
-
-          <h1 id="featured-title">
-            Solo Leveling
-          </h1>
-
-          <p id="featured-desc">
-            The weakest hunter becomes humanity's strongest weapon.
-          </p>
-
-          <button class="hero-btn">
-            ▶ Continue
-          </button>
-
+          <span id="featured-rating">★★★★★ 9.7</span>
+          <span id="featured-duration">2h 49m</span>
+          <span id="featured-episodes">24 Episodes</span>
         </div>
 
-      </section>
-
-      <aside class="side-widgets">
-
-        <div class="widget profile-widget">
-          <h3>Welcome Back</h3>
-          <p id="nav-user"></p>
+        <!-- Genres & Studio row -->
+        <div class="hero-chips" id="featured-genres">
+          <span class="genre-chip">Action</span>
+          <span class="genre-chip">Fantasy</span>
         </div>
 
-        <div class="widget clock-widget">
+        <div class="hero-studio-row">
+          <span class="studio-label">Studio</span>
+          <span id="featured-studio">A-1 Pictures</span>
+          <span class="status-dot" id="featured-status"></span>
+          <span id="featured-status-label">Airing</span>
+        </div>
+
+        <!-- Search -->
+        <div class="hero-search">
+          <input id="search" type="search" placeholder="Search anime, movies, dramas..." autocomplete="off" />
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="hero-actions">
+          <button class="hero-btn hero-btn-primary" id="featured-button">▶ Continue</button>
+          <button class="hero-btn hero-btn-secondary" id="trailer-btn">▶ Trailer</button>
+          <button class="hero-btn hero-btn-tertiary" id="mylist-btn">+ My List</button>
+          <button class="hero-btn hero-btn-icon" id="bookmark-btn">🔖</button>
+        </div>
+
+      </div>
+
+      <!-- Hero lighting overlay -->
+      <div class="hero-lighting"></div>
+    </section>
+
+    <!-- GLASS SIDEBAR WIDGETS -->
+    <aside class="side-widgets">
+
+      <div class="widget profile-widget glass-widget">
+        <div class="widget-shine"></div>
+        <h3>Welcome Back</h3>
+        <p id="nav-user"></p>
+        <div class="widget-progress-ring"></div>
+      </div>
+
+      <div class="widget clock-widget glass-widget">
+        <div class="widget-shine"></div>
+        <div class="clock-face">
           <h1 id="clock">20:48</h1>
           <p id="date">Tuesday</p>
         </div>
+      </div>
 
-        <div class="widget quote-widget">
-          <p id="quote-text">
-            "No matter how deep the night,
-            it always turns to day."
-          </p>
+      <div class="widget weather-widget glass-widget">
+        <div class="widget-shine"></div>
+        <div class="weather-icon">🌙</div>
+        <div class="weather-info">
+          <p class="weather-temp">22°C</p>
+          <p class="weather-desc">Clear Night</p>
         </div>
+      </div>
 
-        <div class="widget weather-widget">
-          <div class="weather-icon">🌙</div>
-          <div class="weather-info">
-            <p class="weather-temp">22°C</p>
-            <p class="weather-desc">Clear Night</p>
+      <div class="widget quote-widget glass-widget">
+        <div class="widget-shine"></div>
+        <div class="quote-icon">💬</div>
+        <p id="quote-text">"No matter how deep the night, it always turns to day."</p>
+      </div>
+
+      <div class="widget streak-widget glass-widget">
+        <div class="widget-shine"></div>
+        <div class="streak-icon">🔥</div>
+        <div class="streak-info">
+          <p class="streak-count" id="current-streak">0</p>
+          <p class="streak-label">Day Streak</p>
+        </div>
+      </div>
+
+      <div class="widget goal-widget glass-widget">
+        <div class="widget-shine"></div>
+        <div class="goal-icon">🎯</div>
+        <div class="goal-info">
+          <p class="goal-text" id="watch-goal">0 / 100 episodes</p>
+          <p class="goal-label">Monthly Goal</p>
+          <div class="goal-bar">
+            <div class="goal-bar-fill" id="goal-bar-fill" style="width: 0%"></div>
           </div>
         </div>
+      </div>
 
-        <div class="widget music-widget">
-          <div class="music-icon">🎵</div>
-          <div class="music-info">
-            <p class="music-song">Now Playing</p>
-            <p class="music-artist">Select a track</p>
-          </div>
+      <div class="widget music-widget glass-widget">
+        <div class="widget-shine"></div>
+        <div class="music-icon">🎵</div>
+        <div class="music-info">
+          <p class="music-song">Now Playing</p>
+          <p class="music-artist">Select a track</p>
         </div>
-
-      </aside>
-
-    </header>
-
-    <section class="quick-access-dock">
-
-      <div class="quick-card">
-        📺 Anime
+        <div class="music-wave">
+          <span></span><span></span><span></span><span></span>
+        </div>
       </div>
 
-      <div class="quick-card">
-        🎬 Movies
+      <div class="widget status-widget glass-widget">
+        <div class="widget-shine"></div>
+        <div class="status-header">
+          <span class="status-dot-green"></span>
+          <h3>System</h3>
+        </div>
+        <p id="system-status">All systems nominal</p>
       </div>
 
-      <div class="quick-card">
-        🇰🇷 K-Drama
+      <div class="widget storage-widget glass-widget">
+        <div class="widget-shine"></div>
+        <h3>Storage</h3>
+        <p id="storage-used">12.8 GB of 256 GB</p>
       </div>
 
-      <div class="quick-card">
-        📚 Manga
+      <div class="widget activity-widget glass-widget">
+        <div class="widget-shine"></div>
+        <h3>Recent</h3>
+        <p id="recent-activity">Last synced with library.</p>
       </div>
 
-      <div class="quick-card">
-        🎵 Music
-      </div>
+    </aside>
 
-      <div class="quick-card">
-        🎮 Games
-      </div>
+  </header>
 
-      <div class="quick-card">
-        📖 Novels
-      </div>
-
-    </section>
-
-    <section id="stats">
-      <div class="stat-card">
-        <span class="stat-label">Titles Logged</span>
-        <h2 id="anime-count">0</h2>
-      </div>
-      <div class="stat-card">
-        <span class="stat-label">Hours Watched</span>
-        <h2 id="hours-watched">0</h2>
-      </div>
-      <div class="stat-card">
-        <span class="stat-label">Top Pick</span>
-        <h2 id="top-anime">—</h2>
-      </div>
-    </section>
-
-    <div id="error-message"></div>
-
-    <div id="loader">
-      <div class="reel-spinner" aria-hidden="true"></div>
-      <span>Rolling film…</span>
+  <!-- QUICK ACCESS DOCK -->
+  <section class="quick-access-dock">
+    <div class="quick-card" data-filter="Anime">
+      <span class="quick-icon">📺</span>
+      <span>Anime</span>
     </div>
+    <div class="quick-card" data-filter="Movies">
+      <span class="quick-icon">🎬</span>
+      <span>Movies</span>
+    </div>
+    <div class="quick-card" data-filter="K-Drama">
+      <span class="quick-icon">🇰🇷</span>
+      <span>K-Drama</span>
+    </div>
+    <div class="quick-card" data-filter="TV">
+      <span class="quick-icon">📺</span>
+      <span>TV</span>
+    </div>
+    <div class="quick-card" data-filter="Manga">
+      <span class="quick-icon">📚</span>
+      <span>Manga</span>
+    </div>
+    <div class="quick-card" data-filter="Music">
+      <span class="quick-icon">🎵</span>
+      <span>Music</span>
+    </div>
+    <div class="quick-card" data-filter="Games">
+      <span class="quick-icon">🎮</span>
+      <span>Games</span>
+    </div>
+    <div class="quick-card" data-filter="Novels">
+      <span class="quick-icon">📖</span>
+      <span>Novels</span>
+    </div>
+  </section>
 
-    <section id="featured-anime">
-      <p class="rail-label">Now Screening</p>
-      <div class="hero-carousel">
+  <!-- PREMIUM STATISTICS BENTO -->
+  <section id="stats">
+    <div class="stat-card">
+      <span class="stat-label">Titles Logged</span>
+      <h2 class="stat-counter" id="anime-count">0</h2>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">Hours Watched</span>
+      <h2 class="stat-counter" id="hours-watched">0</h2>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">Total Episodes</span>
+      <h2 class="stat-counter" id="total-episodes">0</h2>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">Current Streak</span>
+      <h2 class="stat-counter" id="streak-count">0</h2>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">Completion</span>
+      <h2 class="stat-counter" id="completion-pct">0%</h2>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">Weekly Goal</span>
+      <h2 class="stat-counter" id="weekly-goal">0 / 10</h2>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">Favorite Genre</span>
+      <h2 class="stat-counter" id="fav-genre">—</h2>
+    </div>
+  </section>
 
-        <div class="hero-slide active">
-          <img src="/images/solo-leveling.jpg" alt="Solo Leveling" />
-          <div class="hero-overlay">
-            <span class="hero-tag">Feature Presentation</span>
-            <h1>Solo Leveling</h1>
-            <p>The weakest hunter becomes humanity's strongest weapon.</p>
-            <button class="hero-btn">▶ Explore</button>
-          </div>
-        </div>
+  <div id="error-message"></div>
 
-        <div class="hero-slide">
-          <img src="/images/classroom.jpg" alt="Classroom of the Elite" />
-          <div class="hero-overlay">
-            <span class="hero-tag">Feature Presentation</span>
-            <h1>Classroom of the Elite</h1>
-            <p>Genius students compete in a ruthless elite academy.</p>
-            <button class="hero-btn">▶ Explore</button>
-          </div>
-        </div>
-
-        <div class="hero-slide">
-          <img src="/images/frieren.jpg" alt="Frieren" />
-          <div class="hero-overlay">
-            <span class="hero-tag">Feature Presentation</span>
-            <h1>Frieren</h1>
-            <p>A beautiful journey after the hero's adventure ends.</p>
-            <button class="hero-btn">▶ Explore</button>
-          </div>
-        </div>
-
-        <div class="hero-dots" id="hero-dots"></div>
-      </div>
-    </section>
-
-    <h2 class="section-title">Continue Watching</h2>
-    <div id="continue-watching"></div>
-
-    <section id="filters">
-      <button class="filter-btn active">All</button>
-      <button class="filter-btn">Anime</button>
-      <button class="filter-btn">Movies</button>
-      <button class="filter-btn">Series</button>
-      <button class="filter-btn">K-Drama</button>
-    </section>
-
-    <h2 class="section-title">Watch History</h2>
-    <section id="anime-list"></section>
-
+  <div id="loader">
+    <div class="reel-spinner" aria-hidden="true"></div>
+    <span>Rolling film…</span>
   </div>
 
-  <nav class="entertainment-dock">
-    <div class="dock-item">
-      <span class="dock-icon">🏠</span>
-      <span class="dock-label">Home</span>
-    </div>
-    <div class="dock-item">
-      <span class="dock-icon">📺</span>
-      <span class="dock-label">Anime</span>
-    </div>
-    <div class="dock-item">
-      <span class="dock-icon">🎬</span>
-      <span class="dock-label">Movies</span>
-    </div>
-    <div class="dock-item">
-      <span class="dock-icon">🇰🇷</span>
-      <span class="dock-label">Drama</span>
-    </div>
-    <div class="dock-item">
-      <span class="dock-icon">📚</span>
-      <span class="dock-label">Manga</span>
-    </div>
-    <div class="dock-item">
-      <span class="dock-icon">🎵</span>
-      <span class="dock-label">Music</span>
-    </div>
-    <div class="dock-item">
-      <span class="dock-icon">🎮</span>
-      <span class="dock-label">Games</span>
-    </div>
-    <div class="dock-item">
-      <span class="dock-icon">⚙️</span>
-      <span class="dock-label">Settings</span>
-    </div>
-  </nav>
+  <!-- CONTINUE WATCHING (DO NOT MODIFY) -->
+  <h2 class="section-title">Continue Watching</h2>
+  <div id="continue-watching"></div>
 
-  <div id="command-palette" class="command-palette">
-    <div class="command-palette-content">
-      <div class="command-input-wrapper">
-        <span class="command-prompt">/</span>
-        <input
-          id="command-input"
-          type="text"
-          placeholder="Type a command..."
-          autocomplete="off"
-        />
+  <!-- FILTERS -->
+  <section id="filters">
+    <button class="filter-btn active">All</button>
+    <button class="filter-btn">Anime</button>
+    <button class="filter-btn">Movies</button>
+    <button class="filter-btn">TV</button>
+    <button class="filter-btn">K-Drama</button>
+  </section>
+
+  <!-- WATCH HISTORY -->
+  <h2 class="section-title">Watch History</h2>
+  <section id="anime-list"></section>
+
+</div>
+
+<!-- ENTERTAINMENT DOCK -->
+<nav class="entertainment-dock">
+  <div class="dock-item">
+    <span class="dock-icon">🏠</span>
+    <span class="dock-label">Home</span>
+  </div>
+  <div class="dock-item">
+    <span class="dock-icon">📺</span>
+    <span class="dock-label">Anime</span>
+  </div>
+  <div class="dock-item">
+    <span class="dock-icon">🎬</span>
+    <span class="dock-label">Movies</span>
+  </div>
+  <div class="dock-item">
+    <span class="dock-icon">🇰🇷</span>
+    <span class="dock-label">Drama</span>
+  </div>
+  <div class="dock-item">
+    <span class="dock-icon">📚</span>
+    <span class="dock-label">Manga</span>
+  </div>
+  <div class="dock-item">
+    <span class="dock-icon">🎵</span>
+    <span class="dock-label">Music</span>
+  </div>
+  <div class="dock-item">
+    <span class="dock-icon">🎮</span>
+    <span class="dock-label">Games</span>
+  </div>
+  <div class="dock-item">
+    <span class="dock-icon">⚙️</span>
+    <span class="dock-label">Settings</span>
+  </div>
+</nav>
+
+<!-- COMMAND PALETTE -->
+<div id="command-palette" class="command-palette">
+  <div class="command-palette-content">
+    <div class="command-input-wrapper">
+      <span class="command-prompt">/</span>
+      <input id="command-input" type="text" placeholder="Type a command..." autocomplete="off" />
+    </div>
+    <div class="command-list">
+      <div class="command-item" data-command="/watching">
+        <span class="command-icon">📺</span>
+        <span class="command-name">/watching</span>
+        <span class="command-desc">Continue watching</span>
       </div>
-      <div class="command-list">
-        <div class="command-item" data-command="/watching">
-          <span class="command-icon">📺</span>
-          <span class="command-name">/watching</span>
-          <span class="command-desc">Continue watching</span>
-        </div>
-        <div class="command-item" data-command="/stats">
-          <span class="command-icon">📊</span>
-          <span class="command-name">/stats</span>
-          <span class="command-desc">View statistics</span>
-        </div>
-        <div class="command-item" data-command="/library">
-          <span class="command-icon">📚</span>
-          <span class="command-name">/library</span>
-          <span class="command-desc">Browse library</span>
-        </div>
-        <div class="command-item" data-command="/random">
-          <span class="command-icon">🎲</span>
-          <span class="command-name">/random</span>
-          <span class="command-desc">Random pick</span>
-        </div>
-        <div class="command-item" data-command="/theme">
-          <span class="command-icon">🎨</span>
-          <span class="command-name">/theme</span>
-          <span class="command-desc">Change theme</span>
-        </div>
-        <div class="command-item" data-command="/settings">
-          <span class="command-icon">⚙️</span>
-          <span class="command-name">/settings</span>
-          <span class="command-desc">Open settings</span>
-        </div>
+      <div class="command-item" data-command="/stats">
+        <span class="command-icon">📊</span>
+        <span class="command-name">/stats</span>
+        <span class="command-desc">View statistics</span>
+      </div>
+      <div class="command-item" data-command="/library">
+        <span class="command-icon">📚</span>
+        <span class="command-name">/library</span>
+        <span class="command-desc">Browse library</span>
+      </div>
+      <div class="command-item" data-command="/random">
+        <span class="command-icon">🎲</span>
+        <span class="command-name">/random</span>
+        <span class="command-desc">Random pick</span>
+      </div>
+      <div class="command-item" data-command="/theme">
+        <span class="command-icon">🎨</span>
+        <span class="command-name">/theme</span>
+        <span class="command-desc">Change theme</span>
+      </div>
+      <div class="command-item" data-command="/settings">
+        <span class="command-icon">⚙️</span>
+        <span class="command-name">/settings</span>
+        <span class="command-desc">Open settings</span>
       </div>
     </div>
   </div>
+</div>
 
-  <div id="modal" class="modal">
-    <div class="modal-content">
-      <span id="close-modal">✖</span>
-      <div id="modal-body"></div>
-    </div>
+<!-- MODAL -->
+<div id="modal" class="modal">
+  <div class="modal-content">
+    <span id="close-modal">✖</span>
+    <div id="modal-body"></div>
   </div>
+</div>
 
-  <script type="module" src="/src/main.js"></script>
+<script type="module" src="/src/main.js"></script>
 </body>
 </html>

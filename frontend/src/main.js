@@ -44,6 +44,8 @@ const featuredButton = document.getElementById("featured-button");
 const heroTag = featuredCategory;
 const heroPosterImg = document.querySelector(".hero-poster-img");
 const heroPoster = document.getElementById("hero-poster");
+const bookmarkButton = document.getElementById("bookmark-btn");
+const trailerButton = document.getElementById("trailer-btn");
 const quickCards = document.querySelectorAll(".quick-card");
 const navbar = document.querySelector(".navbar");
 const weatherIcon = document.querySelector(".weather-icon");
@@ -54,6 +56,11 @@ const storageText = document.getElementById("storage-used");
 const activityText = document.getElementById("recent-activity");
 
 let allAnime = [];
+let searchDebounceTimer = null;
+let scrollRafId = null;
+let heroParallaxFrame = null;
+let heroParallaxX = 0;
+let heroParallaxY = 0;
 
 function formatTimeAgo(dateString) {
   if (!dateString) {
@@ -100,12 +107,21 @@ function getPercentWatched(anime) {
   );
 }
 
-async function getAnimePoster(title) {
-  const cachedPoster = localStorage.getItem(`poster-${title}`);
-
-  if (cachedPoster) {
-    return cachedPoster;
+async function getAnimeDetails(title) {
+  const cachedDetails = localStorage.getItem(`details-${title}`);
+  if (cachedDetails) {
+    try {
+      return JSON.parse(cachedDetails);
+    } catch (e) {
+      // ignore cache parse error
+    }
   }
+
+  const cachedPoster = localStorage.getItem(`poster-${title}`);
+  const fallback = {
+    poster: cachedPoster || "https://placehold.co/300x400",
+    genres: ["Action", "Fantasy"]
+  };
 
   try {
     const query = `
@@ -114,6 +130,7 @@ async function getAnimePoster(title) {
           coverImage {
             large
           }
+          genres
         }
       }
     `;
@@ -123,14 +140,159 @@ async function getAnimePoster(title) {
       variables: { search: title }
     });
 
-    const poster = response.data.data.Media.coverImage.large;
+    const media = response.data?.data?.Media;
+    const details = {
+      poster: media?.coverImage?.large || fallback.poster,
+      genres: media?.genres || fallback.genres
+    };
 
-    localStorage.setItem(`poster-${title}`, poster);
+    localStorage.setItem(`details-${title}`, JSON.stringify(details));
+    localStorage.setItem(`poster-${title}`, details.poster);
 
-    return poster;
-  } catch {
-    return "https://placehold.co/300x400";
+    return details;
+  } catch (error) {
+    return fallback;
   }
+}
+
+async function getAnimePoster(title) {
+  const details = await getAnimeDetails(title);
+  return details.poster;
+}
+
+function getEpisodeNumber(episodeStr) {
+  if (!episodeStr) return 0;
+  const epMatch = episodeStr.match(/EP\s*(\d+)/i);
+  if (epMatch) {
+    return parseInt(epMatch[1], 10);
+  }
+  const numMatch = episodeStr.match(/\d+/);
+  if (numMatch) {
+    return parseInt(numMatch[0], 10);
+  }
+  return 1;
+}
+
+function calculateCurrentStreak(data) {
+  if (!data || !data.length) return 0;
+  const dates = [...new Set(
+    data
+      .filter(anime => anime.updatedAt)
+      .map(anime => anime.updatedAt.slice(0, 10))
+  )].sort((a, b) => new Date(b) - new Date(a));
+
+  if (dates.length === 0) return 0;
+
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayStr = yesterday.toISOString().slice(0, 10);
+
+  if (dates[0] !== todayStr && dates[0] !== yesterdayStr) {
+    return 0;
+  }
+
+  let streak = 1;
+  let current = new Date(dates[0]);
+
+  for (let i = 1; i < dates.length; i++) {
+    const nextDate = new Date(dates[i]);
+    const diffTime = Math.abs(current - nextDate);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 1) {
+      streak++;
+      current = nextDate;
+    } else if (diffDays > 1) {
+      break;
+    }
+  }
+  return streak;
+}
+
+async function calculateFavoriteGenre(data) {
+  if (!data || !data.length) return "None";
+  const genreCounts = {};
+  for (const anime of data) {
+    const details = await getAnimeDetails(anime.animeTitle);
+    if (details && details.genres) {
+      details.genres.forEach(genre => {
+        genreCounts[genre] = (genreCounts[genre] || 0) + 1;
+      });
+    }
+  }
+  let fav = "Fantasy";
+  let maxCount = 0;
+  let hasGenres = false;
+  for (const [genre, count] of Object.entries(genreCounts)) {
+    hasGenres = true;
+    if (count > maxCount) {
+      maxCount = count;
+      fav = genre;
+    }
+  }
+  return hasGenres ? fav : "—";
+}
+
+function animateCounter(elementId, targetValue, suffix = "", duration = 1000) {
+  const element = document.getElementById(elementId);
+  if (!element) return;
+
+  const startValue = 0;
+  const isFloat = typeof targetValue === "number" && targetValue % 1 !== 0;
+  const target = parseFloat(targetValue) || 0;
+
+  if (target === 0) {
+    element.innerText = "0" + suffix;
+    return;
+  }
+
+  const startTime = performance.now();
+
+  function update(currentTime) {
+    const elapsed = currentTime - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    const easeProgress = progress * (2 - progress);
+    const currentValue = startValue + easeProgress * (target - startValue);
+    
+    if (isFloat) {
+      element.innerText = currentValue.toFixed(1) + suffix;
+    } else {
+      element.innerText = Math.floor(currentValue) + suffix;
+    }
+
+    if (progress < 1) {
+      requestAnimationFrame(update);
+    } else {
+      if (isFloat) {
+        element.innerText = target.toFixed(1) + suffix;
+      } else {
+        element.innerText = target + suffix;
+      }
+    }
+  }
+
+  requestAnimationFrame(update);
+}
+
+function animateWeeklyGoal(elementId, currentVal, targetGoal = 10, duration = 1000) {
+  const element = document.getElementById(elementId);
+  if (!element) return;
+
+  const startTime = performance.now();
+  function update(currentTime) {
+    const elapsed = currentTime - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    const easeProgress = progress * (2 - progress);
+    const current = Math.floor(easeProgress * currentVal);
+    element.innerText = `${current} / ${targetGoal}`;
+    if (progress < 1) {
+      requestAnimationFrame(update);
+    } else {
+      element.innerText = `${currentVal} / ${targetGoal}`;
+    }
+  }
+  requestAnimationFrame(update);
 }
 
 async function renderAnime(data) {
@@ -144,88 +306,168 @@ async function renderAnime(data) {
     return;
   }
 
-  animeList.innerHTML = "";
+  const detailsResults = await Promise.all(
+    data.map(async (anime) => ({ anime, details: await getAnimeDetails(anime.animeTitle) }))
+  );
 
-  for (const anime of data) {
-    const poster = await getAnimePoster(anime.animeTitle);
+  const fragment = document.createDocumentFragment();
+
+  detailsResults.forEach(({ anime, details }) => {
+    const poster = details.poster;
     const pct = getPercentWatched(anime);
+    const runtimeStr = formatTimecode(anime.duration);
 
     const card = document.createElement("div");
-    card.className = "card";
+    card.className = "history-card";
 
     card.innerHTML = `
-      <div class="card-media">
-        <img src="${poster}" class="anime-cover" alt="${anime.animeTitle}">
-        <span class="card-badge">${pct}% watched</span>
+      <div class="history-card-media">
+        <img src="${poster}" class="anime-cover" alt="${anime.animeTitle}" loading="lazy" decoding="async">
+        <span class="history-card-badge">${pct}% watched</span>
+        <div class="history-card-overlay"></div>
+        <button class="history-resume-btn" aria-label="Resume">
+          <span>▶</span>
+        </button>
+        <div class="history-card-context">
+          <button class="history-card-context-btn" aria-label="More Options">⋮</button>
+        </div>
       </div>
 
-      <div class="card-body">
-        <h2 class="card-title">${anime.animeTitle}</h2>
-        <p class="card-meta">${anime.episode}</p>
-        <p class="last-watched">${formatTimeAgo(anime.updatedAt)}</p>
-        <p class="card-timecode">
-          ${formatTimecode(anime.currentTime)} / ${formatTimecode(anime.duration)}
-        </p>
-
-        <div class="progress-container">
-          <div class="progress-fill" style="width: ${pct}%;"></div>
+      <div class="history-card-body">
+        <h3>${anime.animeTitle}</h3>
+        <p class="history-card-meta">${anime.episode}</p>
+        <div class="history-card-progress">
+          <div class="progress-container">
+            <div class="progress-fill" style="width: ${pct}%;"></div>
+          </div>
+          <span class="continue-pct">${pct}%</span>
         </div>
-
-        <button class="watch-btn">▶ Continue Watching</button>
+        <div style="font-size: 10px; color: var(--text-muted); margin-top: 6px; display: flex; justify-content: space-between;">
+          <span>Runtime: ${runtimeStr}</span>
+          <span>${formatTimeAgo(anime.updatedAt)}</span>
+        </div>
       </div>
     `;
 
-    animeList.appendChild(card);
-
     card.addEventListener("click", () => {
       modal.style.display = "flex";
-
       modalBody.innerHTML = `
-        <img src="${poster}">
-        <h1>${anime.animeTitle}</h1>
-        <p>${anime.episode}</p>
-        <p>Last Position: ${formatTimecode(anime.currentTime)} / ${formatTimecode(anime.duration)}</p>
-        <div class="progress-container">
-          <div class="progress-fill" style="width: ${pct}%;"></div>
+        <div class="modal-detail-wrapper" style="display: flex; gap: 20px;">
+          <img src="${poster}" style="width: 150px; border-radius: 12px; object-fit: cover;" loading="lazy" decoding="async">
+          <div>
+            <h1 style="font-family: var(--font-display); font-size: 28px; margin-bottom: 10px; color: var(--text);">${anime.animeTitle}</h1>
+            <p style="font-family: var(--font-mono); color: var(--primary); margin-bottom: 8px;">${anime.episode}</p>
+            <p style="font-size: 14px; margin-bottom: 8px; color: var(--text-muted);">Last Position: ${formatTimecode(anime.currentTime)} / ${formatTimecode(anime.duration)}</p>
+            <div class="progress-container" style="height: 6px; margin: 12px 0;">
+              <div class="progress-fill" style="width: ${pct}%; background: linear-gradient(90deg, var(--primary), var(--secondary));"></div>
+            </div>
+            <div style="display: flex; gap: 8px; margin-top: 15px; flex-wrap: wrap;">
+              ${details.genres.map(g => `<span class="genre-chip" style="font-size: 11px; padding: 4px 8px;">${g}</span>`).join("")}
+            </div>
+          </div>
         </div>
       `;
     });
 
-    const button = card.querySelector(".watch-btn");
-
-    button.addEventListener("click", (event) => {
-      event.stopPropagation();
+    const resumeBtn = card.querySelector(".history-resume-btn");
+    resumeBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
       if (anime.url) {
-        window.location.href = anime.url;
+        window.open(anime.url, "_blank");
       }
     });
-  }
+
+    const contextBtn = card.querySelector(".history-card-context-btn");
+    contextBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+
+      document.querySelectorAll(".context-dropdown-menu").forEach(el => el.remove());
+
+      const dropdown = document.createElement("div");
+      dropdown.className = "context-dropdown-menu glass-widget";
+      dropdown.style.position = "absolute";
+      dropdown.style.top = `${e.pageY}px`;
+      dropdown.style.left = `${e.pageX}px`;
+      dropdown.style.zIndex = "1000";
+      dropdown.style.padding = "8px 0";
+      dropdown.style.borderRadius = "12px";
+      dropdown.style.background = "rgba(12, 14, 28, 0.95)";
+      dropdown.style.border = "1px solid rgba(255, 255, 255, 0.1)";
+      dropdown.style.boxShadow = "0 10px 30px rgba(0,0,0,0.6)";
+      dropdown.style.backdropFilter = "blur(16px)";
+      dropdown.style.minWidth = "160px";
+
+      dropdown.innerHTML = `
+        <div class="context-item" style="padding: 10px 16px; cursor: pointer; color: var(--text); transition: background 0.2s; font-size: 13px;" data-action="resume">▶ Resume Watch</div>
+        <div class="context-item" style="padding: 10px 16px; cursor: pointer; color: var(--text); transition: background 0.2s; font-size: 13px;" data-action="details">ℹ Show Details</div>
+        <div class="context-item" style="padding: 10px 16px; cursor: pointer; color: var(--text); transition: background 0.2s; font-size: 13px;" data-action="copy">🔗 Copy Watch Link</div>
+      `;
+
+      document.body.appendChild(dropdown);
+
+      dropdown.addEventListener("click", (itemEvent) => {
+        itemEvent.stopPropagation();
+        const action = itemEvent.target.dataset.action;
+        if (action === "resume") {
+          if (anime.url) window.open(anime.url, "_blank");
+        } else if (action === "details") {
+          card.click();
+        } else if (action === "copy") {
+          if (anime.url) {
+            navigator.clipboard.writeText(anime.url).then(() => {
+              alert("Watch link copied to clipboard!");
+            });
+          }
+        }
+        dropdown.remove();
+      });
+
+      const closeMenu = () => {
+        dropdown.remove();
+        document.removeEventListener("click", closeMenu);
+      };
+      setTimeout(() => document.addEventListener("click", closeMenu), 10);
+    });
+
+    fragment.appendChild(card);
+  });
+
+  requestAnimationFrame(() => {
+    animeList.replaceChildren(fragment);
+  });
 }
 
 async function renderContinueWatching() {
   const container = document.getElementById("continue-watching");
-  container.innerHTML = "";
+  if (!container) return;
 
-  const recent = allAnime.slice(0, 5);
+  const recent = allAnime.slice(0, 10);
+  const detailsResults = await Promise.all(
+    recent.map(async (anime) => ({ anime, details: await getAnimeDetails(anime.animeTitle) }))
+  );
 
-  for (const anime of recent) {
-    const poster = await getAnimePoster(anime.animeTitle);
+  const fragment = document.createDocumentFragment();
+
+  detailsResults.forEach(({ anime, details }) => {
+    const poster = details.poster;
     const pct = getPercentWatched(anime);
+    const runtimeStr = formatTimecode(anime.duration);
 
     const card = document.createElement("div");
     card.className = "continue-card";
 
     card.innerHTML = `
       <div class="continue-media">
-        <img src="${poster}" alt="${anime.animeTitle}" />
-        <div class="continue-play">▶</div>
+        <img src="${poster}" alt="${anime.animeTitle}" loading="lazy" decoding="async" />
+        <span class="continue-badge-ep">${anime.episode}</span>
+        <div class="continue-play-overlay">
+          <div class="play-btn-circle">▶</div>
+        </div>
       </div>
-
-      <div class="ticket-divider"></div>
 
       <div class="continue-info">
         <h3>${anime.animeTitle}</h3>
-        <p class="continue-meta">${anime.episode}</p>
+        <p class="continue-meta">Runtime: ${runtimeStr}</p>
 
         <div class="continue-progress-row">
           <div class="progress-container">
@@ -233,14 +475,49 @@ async function renderContinueWatching() {
           </div>
           <span class="continue-pct">${pct}%</span>
         </div>
+        <button class="resume-btn">▶ Resume</button>
       </div>
     `;
 
-    card.onclick = () => {
-      window.open(anime.url, "_blank");
+    const resumeAction = (e) => {
+      e.stopPropagation();
+      if (anime.url) {
+        window.open(anime.url, "_blank");
+      }
     };
 
-    container.appendChild(card);
+    card.addEventListener("click", resumeAction);
+    const resumeBtn = card.querySelector(".resume-btn");
+    if (resumeBtn) {
+      resumeBtn.addEventListener("click", resumeAction);
+    }
+
+    fragment.appendChild(card);
+  });
+
+  requestAnimationFrame(() => {
+    container.replaceChildren(fragment);
+  });
+
+  const prevBtn = document.getElementById("carousel-prev");
+  const nextBtn = document.getElementById("carousel-next");
+  if (prevBtn && nextBtn && !container.dataset.scrollBound) {
+    container.dataset.scrollBound = "true";
+    prevBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      container.scrollBy({ left: -320, behavior: "smooth" });
+    });
+    nextBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      container.scrollBy({ left: 320, behavior: "smooth" });
+    });
+
+    container.addEventListener("wheel", (e) => {
+      if (e.deltaY !== 0) {
+        e.preventDefault();
+        container.scrollLeft += e.deltaY;
+      }
+    }, { passive: false });
   }
 }
 
@@ -282,17 +559,45 @@ async function loadAnime() {
 
   let filteredData = allAnime;
 
-  const totalAnime = data.length;
+  const totalAnime = allAnime.length;
+  const totalHours = parseFloat((
+    allAnime.reduce((sum, anime) => sum + (anime.currentTime || 0), 0) / 3600
+  ).toFixed(1));
+  const totalEpisodes = allAnime.reduce((sum, anime) => sum + getEpisodeNumber(anime.episode), 0);
+  const currentStreak = calculateCurrentStreak(allAnime);
+  const averageCompletion = parseFloat((allAnime.length ? (
+    allAnime.reduce((sum, anime) => {
+      const duration = anime.duration || 1;
+      return sum + Math.min(((anime.currentTime || 0) / duration) * 100, 100);
+    }, 0) / allAnime.length
+  ) : 0).toFixed(1));
 
-  const topAnime = [...data].sort((a, b) => b.currentTime - a.currentTime)[0];
+  const oneWeekAgo = new Date();
+  oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+  const weeklyGoalVal = allAnime.filter(item => {
+    if (!item.updatedAt) return false;
+    return new Date(item.updatedAt) >= oneWeekAgo;
+  }).length;
 
-  const totalHours = (
-    data.reduce((sum, anime) => sum + anime.currentTime, 0) / 3600
-  ).toFixed(1);
+  animateCounter("anime-count", totalAnime);
+  animateCounter("hours-watched", totalHours);
+  animateCounter("total-episodes", totalEpisodes);
+  animateCounter("streak-count", currentStreak);
+  animateCounter("completion-pct", averageCompletion, "%");
+  animateWeeklyGoal("weekly-goal", weeklyGoalVal, 10);
 
-  document.getElementById("anime-count").innerText = totalAnime;
-  document.getElementById("hours-watched").innerText = totalHours;
-  document.getElementById("top-anime").innerText = topAnime ? topAnime.animeTitle : "-";
+  const topAnime = [...allAnime].sort((a, b) => b.currentTime - a.currentTime)[0];
+  const topAnimeEl = document.getElementById("top-anime");
+  if (topAnimeEl) {
+    topAnimeEl.innerText = topAnime ? topAnime.animeTitle : "-";
+  }
+
+  calculateFavoriteGenre(allAnime).then(fav => {
+    const favEl = document.getElementById("fav-genre");
+    if (favEl) {
+      favEl.innerText = fav;
+    }
+  });
 
   await renderAnime(filteredData);
   await renderContinueWatching();
@@ -310,15 +615,18 @@ socket.on("history-updated", () => {
 });
 
 if (searchInput) {
-  searchInput.addEventListener("input", async () => {
-    const search = searchInput.value.toLowerCase();
+  searchInput.addEventListener("input", () => {
+    clearTimeout(searchDebounceTimer);
+    searchDebounceTimer = window.setTimeout(async () => {
+      const search = searchInput.value.trim().toLowerCase();
 
-    const filteredData = allAnime.filter(anime =>
-      anime.animeTitle.toLowerCase().includes(search) ||
-      (anime.type || "").toLowerCase().includes(search)
-    );
+      const filteredData = allAnime.filter(anime =>
+        anime.animeTitle.toLowerCase().includes(search) ||
+        (anime.type || "").toLowerCase().includes(search)
+      );
 
-    await renderAnime(filteredData);
+      await renderAnime(filteredData);
+    }, 120);
   });
 }
 
@@ -367,10 +675,26 @@ featuredButton?.addEventListener("click", () => {
   });
 });
 
+bookmarkButton?.addEventListener("click", () => {
+  bookmarkButton.classList.toggle("is-bookmarked");
+  bookmarkButton.setAttribute("aria-pressed", bookmarkButton.classList.contains("is-bookmarked") ? "true" : "false");
+});
+
+trailerButton?.addEventListener("click", () => {
+  trailerButton.classList.add("is-playing");
+  window.setTimeout(() => trailerButton.classList.remove("is-playing"), 320);
+});
+
 window.addEventListener("scroll", () => {
   if (!navbar) return;
-  navbar.classList.toggle("navbar-shrink", window.scrollY > 24);
-});
+
+  if (scrollRafId) return;
+
+  scrollRafId = requestAnimationFrame(() => {
+    navbar.classList.toggle("navbar-shrink", window.scrollY > 24);
+    scrollRafId = null;
+  });
+}, { passive: true });
 
 document
   .querySelectorAll(".terminal-grid button")
@@ -450,7 +774,9 @@ const themes = {
     text: "#F8FAFC",
     textMuted: "#94A3B8",
     border: "rgba(255,255,255,.08)",
-    wallpaper: "/images/solo-leveling.jpg"
+    wallpaper: "/images/solo-leveling.jpg",
+    glowColor: "rgba(124,92,255,0.3)",
+    particleColor: "rgba(124,92,255,0.6)"
   },
   kdramaMood: {
     name: "K-Drama Mood",
@@ -462,7 +788,9 @@ const themes = {
     text: "#FFFFFF",
     textMuted: "#CBD5E1",
     border: "rgba(255,255,255,.1)",
-    wallpaper: "/images/frieren.jpg"
+    wallpaper: "/images/frieren.jpg",
+    glowColor: "rgba(236,72,153,0.3)",
+    particleColor: "rgba(236,72,153,0.6)"
   },
   cinemaMode: {
     name: "Cinema Mode",
@@ -474,7 +802,9 @@ const themes = {
     text: "#FFFFFF",
     textMuted: "#94A3B8",
     border: "rgba(255,255,255,.08)",
-    wallpaper: "/images/classroom.jpg"
+    wallpaper: "/images/classroom.jpg",
+    glowColor: "rgba(234,179,8,0.3)",
+    particleColor: "rgba(234,179,8,0.6)"
   },
   cyberpunk: {
     name: "Cyberpunk",
@@ -486,7 +816,9 @@ const themes = {
     text: "#FFFFFF",
     textMuted: "#94A3B8",
     border: "rgba(0,255,255,.2)",
-    wallpaper: "/images/solo-leveling.jpg"
+    wallpaper: "/images/solo-leveling.jpg",
+    glowColor: "rgba(0,229,255,0.3)",
+    particleColor: "rgba(0,229,255,0.6)"
   },
   minimal: {
     name: "Minimal",
@@ -498,7 +830,9 @@ const themes = {
     text: "#FFFFFF",
     textMuted: "#9CA3AF",
     border: "rgba(255,255,255,.05)",
-    wallpaper: null
+    wallpaper: null,
+    glowColor: "rgba(148,163,184,0.2)",
+    particleColor: "rgba(148,163,184,0.5)"
   }
 };
 
@@ -514,6 +848,14 @@ function setTheme(themeKey) {
   document.documentElement.style.setProperty("--text", theme.text);
   document.documentElement.style.setProperty("--text-muted", theme.textMuted);
   document.documentElement.style.setProperty("--border", theme.border);
+  
+  // Update dynamic theme-specific effects
+  if (theme.glowColor) {
+    document.documentElement.style.setProperty("--theme-glow", theme.glowColor);
+  }
+  if (theme.particleColor) {
+    document.documentElement.style.setProperty("--theme-particle", theme.particleColor);
+  }
 
   localStorage.setItem("mediavault-theme", themeKey);
 }
@@ -827,6 +1169,11 @@ async function updateFeatured() {
 
   clearCategoryClasses(heroPanel);
   heroPanel.classList.add(categoryClass);
+  heroPanel.style.setProperty("--hero-accent", item.accentColor);
+  heroPanel.style.setProperty("--hero-accent-soft", `${item.accentColor}22`);
+  heroPanel.style.setProperty("--hero-accent-strong", `${item.accentColor}66`);
+  heroPanel.style.setProperty("--hero-poster-glow", `${item.accentColor}55`);
+  heroPanel.style.setProperty("--hero-poster-shadow", `${item.accentColor}33`);
   heroOverlay.classList.add("fade-out");
 
   await preloadImage(item.wallpaper);
@@ -880,16 +1227,28 @@ async function updateFeatured() {
 
 function handleHeroParallax(event) {
   if (!heroBackgroundFront || !heroBackgroundBack || !heroPanel) return;
-  const { left, top, width, height } = heroPanel.getBoundingClientRect();
-  const x = ((event.clientX - left) / width - 0.5) * 18;
-  const y = ((event.clientY - top) / height - 0.5) * 14;
 
-  heroBackgroundFront.style.transform = `translate3d(${x}px, ${y}px, 0) scale(1.06)`;
-  heroBackgroundBack.style.transform = `translate3d(${x * 0.6}px, ${y * 0.6}px, 0) scale(1.05)`;
+  const { left, top, width, height } = heroPanel.getBoundingClientRect();
+  heroParallaxX = ((event.clientX - left) / width - 0.5) * 18;
+  heroParallaxY = ((event.clientY - top) / height - 0.5) * 14;
+
+  if (heroParallaxFrame) return;
+
+  heroParallaxFrame = requestAnimationFrame(() => {
+    heroBackgroundFront.style.transform = `translate3d(${heroParallaxX}px, ${heroParallaxY}px, 0) scale(1.06)`;
+    heroBackgroundBack.style.transform = `translate3d(${heroParallaxX * 0.6}px, ${heroParallaxY * 0.6}px, 0) scale(1.05)`;
+    heroParallaxFrame = null;
+  });
 }
 
 function resetHeroParallax() {
   if (!heroBackgroundFront || !heroBackgroundBack) return;
+
+  if (heroParallaxFrame) {
+    cancelAnimationFrame(heroParallaxFrame);
+    heroParallaxFrame = null;
+  }
+
   heroBackgroundFront.style.transform = "scale(1.05)";
   heroBackgroundBack.style.transform = "scale(1.05)";
 }
@@ -959,19 +1318,20 @@ setInterval(rotateQuote, 10000);
 const atmosphericEffects = document.getElementById("atmospheric-effects");
 
 function createRain() {
-  atmosphericEffects.innerHTML = "";
+  const fragment = document.createDocumentFragment();
   for (let i = 0; i < 100; i++) {
     const drop = document.createElement("div");
     drop.className = "rain-drop";
     drop.style.left = Math.random() * 100 + "%";
     drop.style.animationDuration = (Math.random() * 0.5 + 0.5) + "s";
     drop.style.animationDelay = Math.random() * 2 + "s";
-    atmosphericEffects.appendChild(drop);
+    fragment.appendChild(drop);
   }
+  atmosphericEffects.replaceChildren(fragment);
 }
 
 function createSnow() {
-  atmosphericEffects.innerHTML = "";
+  const fragment = document.createDocumentFragment();
   for (let i = 0; i < 50; i++) {
     const flake = document.createElement("div");
     flake.className = "snowflake";
@@ -980,12 +1340,13 @@ function createSnow() {
     flake.style.animationDelay = Math.random() * 5 + "s";
     flake.style.width = (Math.random() * 6 + 4) + "px";
     flake.style.height = flake.style.width;
-    atmosphericEffects.appendChild(flake);
+    fragment.appendChild(flake);
   }
+  atmosphericEffects.replaceChildren(fragment);
 }
 
 function createSakura() {
-  atmosphericEffects.innerHTML = "";
+  const fragment = document.createDocumentFragment();
   for (let i = 0; i < 30; i++) {
     const petal = document.createElement("div");
     petal.className = "sakura-petal";
@@ -994,8 +1355,9 @@ function createSakura() {
     petal.style.animationDelay = Math.random() * 10 + "s";
     petal.style.width = (Math.random() * 8 + 6) + "px";
     petal.style.height = petal.style.width;
-    atmosphericEffects.appendChild(petal);
+    fragment.appendChild(petal);
   }
+  atmosphericEffects.replaceChildren(fragment);
 }
 
 function setAtmosphericEffect(effect) {

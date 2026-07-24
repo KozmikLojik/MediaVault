@@ -85,6 +85,8 @@
 
   <div class="atmospheric-effects" id="atmospheric-effects"></div>
 
+</div>
+
 <!-- ===== PREMIUM GLASS NAVBAR ===== -->
 <nav class="navbar">
   <div class="nav-brand">
@@ -165,6 +167,8 @@
       <div class="hero-poster" id="hero-poster">
         <div class="hero-poster-img"></div>
         <div class="hero-poster-shine"></div>
+        <div class="hero-poster-reflection"></div>
+        <div class="hero-poster-ring"></div>
       </div>
 
       <div class="hero-overlay">
@@ -353,32 +357,53 @@
   <!-- PREMIUM STATISTICS BENTO -->
   <section id="stats">
     <div class="stat-card">
-      <span class="stat-label">Titles Logged</span>
-      <h2 class="stat-counter" id="anime-count">0</h2>
+      <div class="stat-icon">📚</div>
+      <div class="stat-content">
+        <span class="stat-label">Titles Logged</span>
+        <h2 class="stat-counter" id="anime-count">0</h2>
+      </div>
     </div>
     <div class="stat-card">
-      <span class="stat-label">Hours Watched</span>
-      <h2 class="stat-counter" id="hours-watched">0</h2>
+      <div class="stat-icon">⏱</div>
+      <div class="stat-content">
+        <span class="stat-label">Hours Watched</span>
+        <h2 class="stat-counter" id="hours-watched">0</h2>
+      </div>
     </div>
     <div class="stat-card">
-      <span class="stat-label">Total Episodes</span>
-      <h2 class="stat-counter" id="total-episodes">0</h2>
+      <div class="stat-icon">🎞</div>
+      <div class="stat-content">
+        <span class="stat-label">Total Episodes</span>
+        <h2 class="stat-counter" id="total-episodes">0</h2>
+      </div>
     </div>
     <div class="stat-card">
-      <span class="stat-label">Current Streak</span>
-      <h2 class="stat-counter" id="streak-count">0</h2>
+      <div class="stat-icon">🔥</div>
+      <div class="stat-content">
+        <span class="stat-label">Current Streak</span>
+        <h2 class="stat-counter" id="streak-count">0</h2>
+      </div>
     </div>
     <div class="stat-card">
-      <span class="stat-label">Completion</span>
-      <h2 class="stat-counter" id="completion-pct">0%</h2>
+      <div class="stat-icon">🎓</div>
+      <div class="stat-content">
+        <span class="stat-label">Completion</span>
+        <h2 class="stat-counter" id="completion-pct">0%</h2>
+      </div>
     </div>
     <div class="stat-card">
-      <span class="stat-label">Weekly Goal</span>
-      <h2 class="stat-counter" id="weekly-goal">0 / 10</h2>
+      <div class="stat-icon">📅</div>
+      <div class="stat-content">
+        <span class="stat-label">Weekly Goal</span>
+        <h2 class="stat-counter" id="weekly-goal">0 / 10</h2>
+      </div>
     </div>
     <div class="stat-card">
-      <span class="stat-label">Favorite Genre</span>
-      <h2 class="stat-counter" id="fav-genre">—</h2>
+      <div class="stat-icon">🎭</div>
+      <div class="stat-content">
+        <span class="stat-label">Favorite Genre</span>
+        <h2 class="stat-counter" id="fav-genre">—</h2>
+      </div>
     </div>
   </section>
 
@@ -389,9 +414,13 @@
     <span>Rolling film…</span>
   </div>
 
-  <!-- CONTINUE WATCHING (DO NOT MODIFY) -->
+  <!-- CONTINUE WATCHING -->
   <h2 class="section-title">Continue Watching</h2>
-  <div id="continue-watching"></div>
+  <div class="continue-carousel-wrapper">
+    <button class="carousel-arrow carousel-arrow-left" id="carousel-prev" aria-label="Previous">⟨</button>
+    <div id="continue-watching"></div>
+    <button class="carousel-arrow carousel-arrow-right" id="carousel-next" aria-label="Next">⟩</button>
+  </div>
 
   <!-- FILTERS -->
   <section id="filters">

@@ -5,7 +5,8 @@ import "./style.css";
 import {
   requireAuth,
   fetchWithAuth,
-  initNavAuth
+  initNavAuth,
+  getToken
 } from "./services/api";
 
 import {
@@ -19,13 +20,15 @@ import {
   calculateLongestStreak
 } from "./stats.js";
 
-const socket = io(config.API_URL);
-
 if (!requireAuth()) {
   throw new Error("Redirecting to login");
 }
 
 initNavAuth();
+
+const socket = io(config.API_URL, {
+  auth: { token: getToken() }
+});
 
 const loader =
   document.getElementById("loader");

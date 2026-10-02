@@ -3,10 +3,12 @@ import { io } from "socket.io-client";
 
 import config from "./config";
 import "./style.css";
+import "./performance.css";
 import {
   requireAuth,
   fetchWithAuth,
-  initNavAuth
+  initNavAuth,
+  getToken
 } from "./services/api";
 
 if (!requireAuth()) {
@@ -15,7 +17,9 @@ if (!requireAuth()) {
 
 initNavAuth();
 
-const socket = io(config.API_URL);
+const socket = io(config.API_URL, {
+  auth: { token: getToken() }
+});
 
 const animeList = document.getElementById("anime-list");
 const searchInput = document.getElementById("search");
@@ -57,10 +61,58 @@ const activityText = document.getElementById("recent-activity");
 
 let allAnime = [];
 let searchDebounceTimer = null;
+let animeLoadPromise = null;
+let animeReloadRequested = false;
+const animeDetailsCache = new Map();
 let scrollRafId = null;
 let heroParallaxFrame = null;
 let heroParallaxX = 0;
 let heroParallaxY = 0;
+let featuredRotationTimer = null;
+let quoteRotationTimer = null;
+let clockTimer = null;
+const reducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+const isLowEndDevice = (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4) || (navigator.deviceMemory && navigator.deviceMemory <= 4);
+const shouldReduceMotion = reducedMotionQuery.matches || isLowEndDevice;
+let revealObserver = null;
+
+function initRevealObserver() {
+  if (revealObserver || shouldReduceMotion) {
+    document.querySelectorAll(".reveal").forEach((element) => element.classList.add("is-visible"));
+    return;
+  }
+
+  if (!("IntersectionObserver" in window)) {
+    document.querySelectorAll(".reveal").forEach((element) => element.classList.add("is-visible"));
+    return;
+  }
+
+  revealObserver = new IntersectionObserver((entries, observer) => {
+    entries.forEach((entry) => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add("is-visible");
+        observer.unobserve(entry.target);
+      }
+    });
+  }, {
+    rootMargin: "90px 0px 90px 0px",
+    threshold: 0.12
+  });
+
+  document.querySelectorAll(".reveal").forEach((element) => revealObserver.observe(element));
+}
+
+function observeRevealElement(element) {
+  if (!element) return;
+  element.classList.add("reveal");
+  if (shouldReduceMotion) {
+    element.classList.add("is-visible");
+    return;
+  }
+  if (revealObserver) {
+    revealObserver.observe(element);
+  }
+}
 
 function formatTimeAgo(dateString) {
   if (!dateString) {
@@ -108,7 +160,23 @@ function getPercentWatched(anime) {
 }
 
 async function getAnimeDetails(title) {
-  const cachedDetails = localStorage.getItem(`details-${title}`);
+  const cacheKey = String(title || "").trim();
+  if (animeDetailsCache.has(cacheKey)) {
+    return animeDetailsCache.get(cacheKey);
+  }
+
+  const detailsPromise = loadAnimeDetails(cacheKey);
+  animeDetailsCache.set(cacheKey, detailsPromise);
+  return detailsPromise;
+}
+
+async function loadAnimeDetails(title) {
+  let cachedDetails = null;
+  try {
+    cachedDetails = localStorage.getItem(`details-${title}`);
+  } catch {
+    // Storage can be unavailable in private browsing; the in-memory cache still works.
+  }
   if (cachedDetails) {
     try {
       return JSON.parse(cachedDetails);
@@ -117,7 +185,12 @@ async function getAnimeDetails(title) {
     }
   }
 
-  const cachedPoster = localStorage.getItem(`poster-${title}`);
+  let cachedPoster = null;
+  try {
+    cachedPoster = localStorage.getItem(`poster-${title}`);
+  } catch {
+    // Use the built-in fallback when persistent storage is unavailable.
+  }
   const fallback = {
     poster: cachedPoster || "https://placehold.co/300x400",
     genres: ["Action", "Fantasy"]
@@ -146,8 +219,12 @@ async function getAnimeDetails(title) {
       genres: media?.genres || fallback.genres
     };
 
-    localStorage.setItem(`details-${title}`, JSON.stringify(details));
-    localStorage.setItem(`poster-${title}`, details.poster);
+    try {
+      localStorage.setItem(`details-${title}`, JSON.stringify(details));
+      localStorage.setItem(`poster-${title}`, details.poster);
+    } catch {
+      // Avoid failing the dashboard if the browser has disabled or filled storage.
+    }
 
     return details;
   } catch (error) {
@@ -318,8 +395,7 @@ async function renderAnime(data) {
     const runtimeStr = formatTimecode(anime.duration);
 
     const card = document.createElement("div");
-    card.className = "history-card";
-
+    card.className = "history-card reveal";
     card.innerHTML = `
       <div class="history-card-media">
         <img src="${poster}" class="anime-cover" alt="${anime.animeTitle}" loading="lazy" decoding="async">
@@ -368,6 +444,8 @@ async function renderAnime(data) {
         </div>
       `;
     });
+
+    observeRevealElement(card);
 
     const resumeBtn = card.querySelector(".history-resume-btn");
     resumeBtn.addEventListener("click", (e) => {
@@ -522,6 +600,24 @@ async function renderContinueWatching() {
 }
 
 async function loadAnime() {
+  if (animeLoadPromise) {
+    animeReloadRequested = true;
+    return animeLoadPromise;
+  }
+
+  animeLoadPromise = loadAnimeData();
+  try {
+    await animeLoadPromise;
+  } finally {
+    animeLoadPromise = null;
+    if (animeReloadRequested) {
+      animeReloadRequested = false;
+      loadAnime();
+    }
+  }
+}
+
+async function loadAnimeData() {
   loader.style.display = "flex";
   errorMessage.style.display = "none";
 
@@ -583,8 +679,17 @@ async function loadAnime() {
   animateCounter("hours-watched", totalHours);
   animateCounter("total-episodes", totalEpisodes);
   animateCounter("streak-count", currentStreak);
+  document.getElementById("current-streak")?.replaceChildren(String(currentStreak));
   animateCounter("completion-pct", averageCompletion, "%");
   animateWeeklyGoal("weekly-goal", weeklyGoalVal, 10);
+
+  const goalFill = document.getElementById("goal-bar-fill");
+  const goalText = document.getElementById("watch-goal");
+  if (goalFill && goalText) {
+    const monthlyGoal = 100;
+    goalFill.style.width = `${Math.min((totalEpisodes / monthlyGoal) * 100, 100)}%`;
+    goalText.textContent = `${totalEpisodes} / ${monthlyGoal} episodes`;
+  }
 
   const topAnime = [...allAnime].sort((a, b) => b.currentTime - a.currentTime)[0];
   const topAnimeEl = document.getElementById("top-anime");
@@ -611,7 +716,7 @@ let reloadTimeout;
 
 socket.on("history-updated", () => {
   clearTimeout(reloadTimeout);
-  reloadTimeout = setTimeout(loadAnime, 500);
+  reloadTimeout = setTimeout(loadAnime, 900);
 });
 
 if (searchInput) {
@@ -756,8 +861,6 @@ function updateClock() {
   });
 }
 
-updateClock();
-setInterval(updateClock, 1000);
 
 /* =========================
    DYNAMIC WALLPAPER SYSTEM
@@ -1226,7 +1329,7 @@ async function updateFeatured() {
 }
 
 function handleHeroParallax(event) {
-  if (!heroBackgroundFront || !heroBackgroundBack || !heroPanel) return;
+  if (!heroBackgroundFront || !heroBackgroundBack || !heroPanel || shouldReduceMotion) return;
 
   const { left, top, width, height } = heroPanel.getBoundingClientRect();
   heroParallaxX = ((event.clientX - left) / width - 0.5) * 18;
@@ -1242,7 +1345,7 @@ function handleHeroParallax(event) {
 }
 
 function resetHeroParallax() {
-  if (!heroBackgroundFront || !heroBackgroundBack) return;
+  if (!heroBackgroundFront || !heroBackgroundBack || shouldReduceMotion) return;
 
   if (heroParallaxFrame) {
     cancelAnimationFrame(heroParallaxFrame);
@@ -1253,15 +1356,68 @@ function resetHeroParallax() {
   heroBackgroundBack.style.transform = "scale(1.05)";
 }
 
-heroPanel?.addEventListener("mousemove", handleHeroParallax);
-heroPanel?.addEventListener("mouseleave", resetHeroParallax);
+heroPanel?.addEventListener("mousemove", handleHeroParallax, { passive: true });
+heroPanel?.addEventListener("mouseleave", resetHeroParallax, { passive: true });
+
+function startFeaturedRotation() {
+  if (featuredRotationTimer || shouldReduceMotion) return;
+
+  featuredRotationTimer = window.setInterval(async () => {
+    featuredIndex = (featuredIndex + 1) % featuredMedia.length;
+    await updateFeatured();
+  }, 8000);
+}
+
+function stopFeaturedRotation() {
+  if (featuredRotationTimer) {
+    window.clearInterval(featuredRotationTimer);
+    featuredRotationTimer = null;
+  }
+}
+
+function startQuoteRotation() {
+  if (quoteRotationTimer || shouldReduceMotion) return;
+  quoteRotationTimer = window.setInterval(rotateQuote, 10000);
+}
+
+function stopQuoteRotation() {
+  if (quoteRotationTimer) {
+    window.clearInterval(quoteRotationTimer);
+    quoteRotationTimer = null;
+  }
+}
+
+function startClock() {
+  if (clockTimer) return;
+  updateClock();
+  clockTimer = window.setInterval(updateClock, 60000);
+}
+
+function stopClock() {
+  if (clockTimer) {
+    window.clearInterval(clockTimer);
+    clockTimer = null;
+  }
+}
+
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) {
+    stopFeaturedRotation();
+    stopQuoteRotation();
+    stopClock();
+    return;
+  }
+
+  startFeaturedRotation();
+  startQuoteRotation();
+  startClock();
+});
 
 updateFeatured();
-
-setInterval(async () => {
-  featuredIndex = (featuredIndex + 1) % featuredMedia.length;
-  await updateFeatured();
-}, 8000);
+initRevealObserver();
+startFeaturedRotation();
+startQuoteRotation();
+startClock();
 
 /* =========================
    ROTATING QUOTES
@@ -1309,7 +1465,6 @@ function rotateQuote() {
   currentQuoteIndex = (currentQuoteIndex + 1) % allQuotes.length;
 }
 
-setInterval(rotateQuote, 10000);
 
 /* =========================
    ATMOSPHERIC EFFECTS
@@ -1518,38 +1673,3 @@ commandPalette.addEventListener("click", (e) => {
     closeCommandPalette();
   }
 });
-
-/* =========================
-   WIDGET MICRO-ANIMATIONS
-========================= */
-
-// Streak counter update (animated on load)
-const streakEl = document.getElementById("current-streak");
-if (streakEl) {
-  let streak = parseInt(localStorage.getItem("mediavault-streak") || "0");
-  if (streak === 0) {
-    streak = Math.floor(Math.random() * 7) + 3; // demo: 3-9 days
-  }
-  const target = streak;
-  let current = 0;
-  const interval = setInterval(() => {
-    current++;
-    streakEl.textContent = current;
-    if (current >= target) clearInterval(interval);
-  }, 80);
-}
-
-// Goal bar
-const goalFill = document.getElementById("goal-bar-fill");
-const goalText = document.getElementById("watch-goal");
-if (goalFill && goalText) {
-  const watched = allAnime.length;
-  const goal = 100;
-  const pct = Math.min((watched / goal) * 100, 100);
-  setTimeout(() => {
-    goalFill.style.width = pct + "%";
-  }, 500);
-  if (goalText) {
-    goalText.textContent = `${watched} / ${goal} episodes`;
-  }
-}

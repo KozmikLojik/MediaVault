@@ -106,18 +106,19 @@ export async function fetchWithAuth(
 export function initNavAuth() {
 
   const user = getUser();
-  const userEl =
-    document.getElementById(
-      "nav-user"
+  const userElements =
+    document.querySelectorAll(
+      ".nav-user, #profile-user"
     );
   const logoutBtn =
     document.getElementById(
       "logout-btn"
     );
 
-  if (user && userEl) {
-    userEl.textContent =
-      user.username;
+  if (user) {
+    userElements.forEach((element) => {
+      element.textContent = user.username;
+    });
   }
 
   if (logoutBtn) {

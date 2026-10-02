@@ -40,7 +40,7 @@ const saveProgress = async (req, res) => {
   const io = req.app.get("io");
 
   if (io) {
-    io.emit("history-updated");
+    io.to(`user:${req.user._id}`).emit("history-updated");
   }
 
   res.json({

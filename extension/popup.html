@@ -1,53 +1,49 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>MediaVault</title>
   <link rel="stylesheet" href="popup.css" />
 </head>
 <body>
-  <h1>🎬 MediaVault</h1>
-
-  <div id="auth-section">
-    <p class="auth-label">Sign in to sync progress</p>
-
-    <input
-      id="email"
-      type="email"
-      placeholder="Email"
-    />
-
-    <input
-      id="password"
-      type="password"
-      placeholder="Password"
-    />
-
-    <p id="auth-error" class="auth-error"></p>
-
-    <button id="login-btn">Login</button>
-
-    <button
-      id="register-link"
-      class="secondary-btn"
-    >
-      Create account on web
-    </button>
-  </div>
-
-  <div id="app-section" style="display: none;">
-    <p id="user-greeting"></p>
-
-    <div id="current-anime">
-      <h2 id="title">Nothing Playing</h2>
-      <p id="episode"></p>
-      <p id="time"></p>
+  <header class="brand">
+    <span class="brand-mark" aria-hidden="true">M</span>
+    <div>
+      <h1>MediaVault</h1>
+      <p>Playback companion</p>
     </div>
+  </header>
 
-    <button id="continue-btn">▶ Continue Watching</button>
-    <button id="dashboard-btn">📊 Open Dashboard</button>
-    <button id="logout-btn" class="secondary-btn">Logout</button>
-  </div>
+  <section id="auth-section" class="panel" hidden>
+    <h2>Sync your progress</h2>
+    <p class="muted">Sign in to keep your watch history on all your devices.</p>
+    <form id="login-form">
+      <label for="email">Email</label>
+      <input id="email" type="email" autocomplete="username" placeholder="you@example.com" required />
+      <label for="password">Password</label>
+      <input id="password" type="password" autocomplete="current-password" placeholder="Your password" required />
+      <p id="auth-error" class="error" role="alert" aria-live="polite"></p>
+      <button id="login-btn" type="submit">Sign in</button>
+    </form>
+    <button id="register-link" class="button secondary" type="button">Create account</button>
+  </section>
+
+  <section id="app-section" class="panel" hidden>
+    <p id="user-greeting" class="greeting"></p>
+    <div id="current-anime" class="now-playing">
+      <p class="eyebrow">CONTINUE WATCHING</p>
+      <h2 id="title">Nothing playing yet</h2>
+      <p id="episode" class="muted"></p>
+      <p id="time" class="watch-time"></p>
+      <div class="progress-track" aria-hidden="true"><span id="progress-bar"></span></div>
+      <p id="empty-state" class="muted">Start a video on a supported site and your progress will show here.</p>
+    </div>
+    <p id="sync-status" class="sync-status" role="status" aria-live="polite"></p>
+    <button id="continue-btn" type="button">Continue watching</button>
+    <button id="dashboard-btn" class="button secondary" type="button">Open dashboard</button>
+    <button id="logout-btn" class="text-button" type="button">Sign out</button>
+  </section>
 
   <script type="module" src="popup.js"></script>
 </body>

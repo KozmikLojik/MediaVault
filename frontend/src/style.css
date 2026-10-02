@@ -78,7 +78,9 @@ body {
 
 a:focus-visible,
 button:focus-visible,
-input:focus-visible {
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
   outline: 2px solid var(--amber);
   outline-offset: 3px;
 }
@@ -2742,6 +2744,10 @@ input:focus-visible {
   cursor: pointer;
   font-size: 22px;
   color: var(--text-muted);
+  border: 0;
+  padding: 0;
+  background: transparent;
+  font: inherit;
   transition: color 0.2s;
 }
 

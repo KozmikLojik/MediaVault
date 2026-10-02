@@ -1,17 +1,20 @@
 import config from "../config";
 
-export const getToken = () =>
-  localStorage.getItem("token");
+export const getToken = () => {
+  try {
+    return localStorage.getItem("token");
+  } catch {
+    return null;
+  }
+};
 
 export const getUser = () => {
-
-  const user =
-    localStorage.getItem("user");
-
-  return user
-    ? JSON.parse(user)
-    : null;
-
+  try {
+    const user = localStorage.getItem("user");
+    return user ? JSON.parse(user) : null;
+  } catch {
+    return null;
+  }
 };
 
 export const authHeaders = () => {
@@ -30,27 +33,27 @@ export const authHeaders = () => {
 };
 
 export const saveAuth = (data) => {
-
-  localStorage.setItem(
-    "token",
-    data.token
-  );
-
-  localStorage.setItem(
-    "user",
-    JSON.stringify({
+  try {
+    localStorage.setItem("token", data.token);
+    localStorage.setItem("user", JSON.stringify({
       _id: data._id,
       username: data.username,
       email: data.email
-    })
-  );
+    }));
+  } catch {
+    logout();
+    throw new Error("Sign-in worked, but this browser could not save the session. Enable site storage and try again.");
+  }
 
 };
 
 export const logout = () => {
-
-  localStorage.removeItem("token");
-  localStorage.removeItem("user");
+  try {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+  } catch {
+    // The current page still redirects on logout when storage is restricted.
+  }
 
 };
 
@@ -71,20 +74,17 @@ export async function fetchWithAuth(
   options = {}
 ) {
 
-  const headers = {
-    "Content-Type":
-      "application/json",
-    ...options.headers,
-    ...authHeaders()
-  };
+  const headers = new Headers(options.headers || {});
+  if (options.body && !headers.has("Content-Type")) headers.set("Content-Type", "application/json");
+  const auth = authHeaders();
+  if (auth.Authorization) headers.set("Authorization", auth.Authorization);
 
-  const response = await fetch(
-    url,
-    {
-      ...options,
-      headers
-    }
-  );
+  let response;
+  try {
+    response = await fetch(url, { ...options, headers });
+  } catch {
+    throw new Error("MediaVault could not reach the API. Check your connection and try again.");
+  }
 
   if (response.status === 401) {
 
@@ -146,9 +146,9 @@ export async function loginUser(
   password
 ) {
 
-  const response = await fetch(
-    `${config.API_URL}/api/auth/login`,
-    {
+  let response;
+  try {
+    response = await fetch(`${config.API_URL}/api/auth/login`, {
       method: "POST",
       headers: {
         "Content-Type":
@@ -158,11 +158,12 @@ export async function loginUser(
         email,
         password
       })
-    }
-  );
+    });
+  } catch {
+    throw new Error("MediaVault could not reach the API. Check your connection and try again.");
+  }
 
-  const data =
-    await response.json();
+  const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
     throw new Error(
@@ -170,6 +171,8 @@ export async function loginUser(
         "Login failed"
     );
   }
+
+  if (!data.token) throw new Error("The server did not return a sign-in token.");
 
   return data;
 
@@ -181,9 +184,9 @@ export async function registerUser(
   password
 ) {
 
-  const response = await fetch(
-    `${config.API_URL}/api/auth/register`,
-    {
+  let response;
+  try {
+    response = await fetch(`${config.API_URL}/api/auth/register`, {
       method: "POST",
       headers: {
         "Content-Type":
@@ -194,11 +197,12 @@ export async function registerUser(
         email,
         password
       })
-    }
-  );
+    });
+  } catch {
+    throw new Error("MediaVault could not reach the API. Check your connection and try again.");
+  }
 
-  const data =
-    await response.json();
+  const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
     throw new Error(
@@ -206,6 +210,8 @@ export async function registerUser(
         "Registration failed"
     );
   }
+
+  if (!data.token) throw new Error("The server did not return a sign-in token.");
 
   return data;
 

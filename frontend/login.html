@@ -31,15 +31,15 @@
       <form id="login-form" class="auth-form">
         <label>
           Email
-          <input id="email" type="email" required placeholder="you@example.com" />
+          <input id="email" name="email" type="email" required maxlength="254" autocomplete="email" placeholder="you@example.com" />
         </label>
 
         <label>
           Password
-          <input id="password" type="password" required placeholder="••••••••" />
+          <input id="password" name="password" type="password" required autocomplete="current-password" placeholder="••••••••" />
         </label>
 
-        <p id="auth-error" class="auth-error"></p>
+        <p id="auth-error" class="auth-error" role="alert" aria-live="polite"></p>
 
         <button id="submit-btn" type="submit">Login</button>
       </form>

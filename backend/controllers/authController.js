@@ -3,12 +3,9 @@ const User = require("../models/User");
 const generateToken = require("../utils/generateToken");
 
 const registerUser = async (req, res) => {
-
-  const {
-    username,
-    email,
-    password
-  } = req.body;
+  const username = typeof req.body?.username === "string" ? req.body.username.trim() : "";
+  const email = typeof req.body?.email === "string" ? req.body.email.trim().toLowerCase() : "";
+  const password = typeof req.body?.password === "string" ? req.body.password : "";
 
   if (
     !username ||
@@ -18,6 +15,18 @@ const registerUser = async (req, res) => {
     return res.status(400).json({
       message: "Please fill all fields"
     });
+  }
+
+  if (username.length < 2 || username.length > 40) {
+    return res.status(400).json({ message: "Username must be 2–40 characters." });
+  }
+
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254) {
+    return res.status(400).json({ message: "Enter a valid email address." });
+  }
+
+  if (password.length < 8 || Buffer.byteLength(password, "utf8") > 72) {
+    return res.status(400).json({ message: "Password must be at least 8 characters and no more than 72 bytes." });
   }
 
   const userExists =
@@ -55,11 +64,8 @@ const registerUser = async (req, res) => {
 };
 
 const loginUser = async (req, res) => {
-
-  const {
-    email,
-    password
-  } = req.body;
+  const email = typeof req.body?.email === "string" ? req.body.email.trim().toLowerCase() : "";
+  const password = typeof req.body?.password === "string" ? req.body.password : "";
 
   if (!email || !password) {
     return res.status(400).json({

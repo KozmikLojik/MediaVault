@@ -31,20 +31,20 @@
       <form id="register-form" class="auth-form">
         <label>
           Username
-          <input id="username" type="text" required placeholder="Your username" />
+          <input id="username" name="username" type="text" required minlength="2" maxlength="40" autocomplete="username" placeholder="Your username" />
         </label>
 
         <label>
           Email
-          <input id="email" type="email" required placeholder="you@example.com" />
+          <input id="email" name="email" type="email" required maxlength="254" autocomplete="email" placeholder="you@example.com" />
         </label>
 
         <label>
           Password
-          <input id="password" type="password" required placeholder="••••••••" minlength="6" />
+          <input id="password" name="password" type="password" required minlength="8" maxlength="72" autocomplete="new-password" placeholder="At least 8 characters" />
         </label>
 
-        <p id="auth-error" class="auth-error"></p>
+        <p id="auth-error" class="auth-error" role="alert" aria-live="polite"></p>
 
         <button id="submit-btn" type="submit">Register</button>
       </form>

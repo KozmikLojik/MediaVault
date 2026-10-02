@@ -39,6 +39,12 @@ const loader =
 const errorMessage =
   document.getElementById("error-message");
 
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (character) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  })[character]);
+}
+
 function formatTimeAgo(dateString) {
 
   if (!dateString) {
@@ -111,7 +117,7 @@ function renderBarChart(
     .map(item => `
       <div class="stats-bar-row">
         <span class="stats-bar-label">
-          ${item[labelKey]}
+          ${escapeHtml(item[labelKey])}
         </span>
         <div class="stats-bar-track">
           <div
@@ -151,7 +157,7 @@ function renderDistributionTable(items) {
   tbody.innerHTML = items
     .map(item => `
       <tr>
-        <td>${item.animeTitle}</td>
+        <td>${escapeHtml(item.animeTitle)}</td>
         <td>${item.minutes}</td>
         <td>${item.percent}%</td>
       </tr>
@@ -176,7 +182,7 @@ function renderRecentList(items) {
   container.innerHTML = items
     .map(item => `
       <div class="recent-item">
-        <strong>${item.animeTitle}</strong>
+        <strong>${escapeHtml(item.animeTitle)}</strong>
         <span>${formatTimeAgo(item.updatedAt)}</span>
       </div>
     `)
@@ -296,13 +302,15 @@ async function loadStats() {
 
     errorMessage.style.display = "block";
 
-    errorMessage.innerHTML = `
-      ❌ Unable to connect
-      to MediaVault backend.
-      <br><br>
-      Start your backend server
-      and refresh the page.
-    `;
+    errorMessage.replaceChildren();
+    const message = document.createElement("p");
+    message.textContent = "MediaVault could not reach the API. Check your connection or try again.";
+    const retryButton = document.createElement("button");
+    retryButton.type = "button";
+    retryButton.className = "library-add-button";
+    retryButton.textContent = "Try again";
+    retryButton.addEventListener("click", loadStats);
+    errorMessage.append(message, retryButton);
 
   }
 

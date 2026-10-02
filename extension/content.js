@@ -1,464 +1,295 @@
-const SITE =
-  window.location.hostname;
+(() => {
+  "use strict";
 
-const isIframe =
-  window !== window.top;
+  const host = window.location.hostname.toLowerCase();
+  const site = findSupportedSite(host);
+  if (!site) return;
 
-console.log("Anime Tracker Loaded");
-console.log(
-  "MediaVault running on:",
-  SITE
-);
-console.log(
-  "Is iframe:",
-  isIframe
-);
+  const isTopFrame = window === window.top;
+  let pageContext = null;
+  let activeVideo = null;
+  let lastSavedTime = -1;
+  let saveTimer = null;
+  const trackedVideos = new WeakSet();
+  const frameStates = new WeakMap();
 
-let receivedAnimeTitle = null;
-let receivedEpisode = null;
-
-window.addEventListener(
-  "message",
-  (event) => {
-
-    if (
-      event.data.type ===
-      "MEDIAVAULT_METADATA"
-    ) {
-
-      receivedAnimeTitle =
-        event.data.animeTitle;
-
-      receivedEpisode =
-        event.data.episode;
-
-      console.log(
-        "Received metadata:",
-        event.data
-      );
+  function readText(selector) {
+    if (!selector) return "";
+    try {
+      return document.querySelector(selector)?.textContent?.trim() || "";
+    } catch {
+      return "";
     }
-
   }
-);
 
-/*
-========================================
-GET ANIME TITLE
-========================================
-*/
+  function cleanTitle(value) {
+    return String(value || "")
+      .replace(/\s*[|—–-]\s*(watch|stream|online|hianime|anidoor|vidnest|crunchyroll).*$/i, "")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
 
-function getAnimeTitle() {
-
-  try {
-
-    if (window.top !== window.self) {
-      return "Iframe Anime";
-    }
-
-    if (
-      document.title &&
-      document.title.includes("— Watch")
-    ) {
-      return document.title
-        .split("— Watch")[0]
-        .trim();
-    }
-
-    const selectors = [
-      ".anime-title",
-      ".film-name",
-      "h1"
+  function getTitle() {
+    const candidates = [
+      readText(site.title),
+      readText(".anime-title"),
+      readText(".film-name"),
+      readText("h1"),
+      document.querySelector('meta[property="og:title"]')?.content,
+      document.title
     ];
 
-    for (const selector of selectors) {
-
-      const element =
-        document.querySelector(selector);
-
-      if (element) {
-        return element.innerText.trim();
+    for (const candidate of candidates) {
+      const title = cleanTitle(candidate);
+      if (title && !/^(watch|home|anime|video|player|unknown)$/i.test(title)) {
+        return title;
       }
     }
-
-    return "Unknown Anime";
-
-  } catch {
-
-    return "Unknown Anime";
-
-  }
-}
-
-/*
-========================================
-GET EPISODE NUMBER
-========================================
-*/
-
-function getEpisode() {
-
-  const element =
-    document.querySelector(
-      ".np-title"
-    );
-
-  if (element) {
-    return element.innerText.trim();
-  }
-
-  return "Unknown Episode";
-}
-
-function getEpisodeNumber() {
-  return getEpisode();
-}
-
-function getCurrentPageUrl() {
-
-  try {
-
-    return window.location.href || document.URL || "";
-
-  } catch {
-
     return "";
   }
-}
 
-/*
-========================================
-WAIT FOR VIDEO
-========================================
-*/
+  function getEpisode() {
+    const candidate =
+      readText(site.episode) ||
+      readText(".np-title") ||
+      readText("[class*='episode-title']") ||
+      readText("[data-episode-title]");
 
-let trackingStarted = false;
-
-if (window.location.hostname.includes("anidoor.me")) {
-
-  function sendMetadataToIframe(
-    title,
-    episode
-  ) {
-    const iframe =
-      document.querySelector("iframe");
-
-    if (!iframe) return;
-
-    iframe.onload = () => {
-
-      iframe.contentWindow.postMessage(
-        {
-          type:
-            "MEDIAVAULT_METADATA",
-
-          animeTitle: title,
-
-          episode
-        },
-        "*"
-      );
-
-      console.log(
-        "Sent metadata:",
-        title,
-        episode
-      );
-
-    };
+    if (candidate) return candidate;
+    return site.episode === null ? "Video" : "";
   }
 
-  const saveAnimeInfo = () => {
+  function getPageUrl() {
+    try {
+      return isTopFrame ? window.location.href : window.top.location.href;
+    } catch {
+      return window.location.href;
+    }
+  }
 
-    const title =
-      receivedAnimeTitle ||
-      getAnimeTitle();
+  function getContext() {
+    const animeTitle = getTitle();
+    const episode = getEpisode();
+    if (!animeTitle || !episode) return null;
+    return { animeTitle, episode, url: getPageUrl() };
+  }
 
-    const episode =
-      receivedEpisode ||
-      getEpisode();
+  function contextKey(context) {
+    return `${context.animeTitle}\n${context.episode}\n${context.url}`;
+  }
 
-    sendMetadataToIframe(
-      title,
-      episode
-    );
+  function isSupportedOrigin(origin) {
+    try {
+      return Boolean(findSupportedSite(new URL(origin).hostname.toLowerCase()));
+    } catch {
+      return false;
+    }
+  }
+
+  function sendContextToFrame(frame, context) {
+    if (!frame?.isConnected || !frame.contentWindow) return;
+    let origin;
+    try {
+      origin = new URL(frame.src || window.location.href, window.location.href).origin;
+    } catch {
+      return;
+    }
+    if (!isSupportedOrigin(origin)) return;
+
+    const key = contextKey(context);
+    const previousState = frameStates.get(frame);
+    if (previousState?.key === key && (
+      previousState.acknowledged || Date.now() - previousState.sentAt < 10000
+    )) return;
+
+    const state = { key, acknowledged: false, sentAt: Date.now() };
+    frameStates.set(frame, state);
+    let attempts = 0;
+    const send = () => {
+      if (!frame.isConnected || frameStates.get(frame) !== state || state.acknowledged) return;
+      frame.contentWindow.postMessage({ type: "MEDIAVAULT_METADATA", context }, origin);
+      attempts += 1;
+      if (attempts < 8) window.setTimeout(send, 900);
+    };
+    send();
+  }
+
+  function sendContextToFrames(context) {
+    if (!isTopFrame || !context) return;
+    document.querySelectorAll("iframe").forEach((frame) => {
+      if (!frame.dataset.mediavaultLoadListener) {
+        frame.dataset.mediavaultLoadListener = "true";
+        frame.addEventListener("load", () => {
+          const current = getContext();
+          if (current) {
+            frameStates.delete(frame);
+            sendContextToFrame(frame, current);
+          }
+        });
+      }
+      sendContextToFrame(frame, context);
+    });
+  }
+
+  window.addEventListener("message", (event) => {
+    if (!event.data || typeof event.data !== "object") return;
 
     if (
-      title &&
-      title !== "Unknown Anime" &&
-      title !== "Iframe Anime" &&
-      episode &&
-      episode !== "Unknown Episode"
+      isTopFrame &&
+      event.data.type === "MEDIAVAULT_METADATA_ACK" &&
+      isSupportedOrigin(event.origin)
     ) {
-
-      const animeInfo = {
-        animeTitle: title,
-        episode,
-        url: getCurrentPageUrl()
-      };
-
-      chrome.storage.local.set({
-        currentAnimeInfo: animeInfo
-      });
-
-      console.log("ANIME INFO SAVED");
-      console.log(animeInfo);
-
-      return true;
-    }
-
-    return false;
-  };
-
-  const interval = setInterval(() => {
-
-    if (saveAnimeInfo()) {
-      clearInterval(interval);
-    }
-
-  }, 1000);
-}
-
-function getVideoPlayer() {
-
-  const videos =
-    document.querySelectorAll(
-      "video"
-    );
-
-  if (videos.length > 0) {
-    return videos[0];
-  }
-
-  return null;
-}
-
-function waitForVideo() {
-
-  console.log("Waiting for video...");
-
-  const interval = setInterval(() => {
-
-    if (trackingStarted) {
-      clearInterval(interval);
+      const frame = [...document.querySelectorAll("iframe")].find(
+        (candidate) => candidate.contentWindow === event.source
+      );
+      if (!frame) return;
+      const state = frameStates.get(frame);
+      if (state) state.acknowledged = true;
       return;
     }
 
-    const video = getVideoPlayer();
-
-    if (video) {
-
-      trackingStarted = true;
-
-      console.log("Video Found");
-
-      clearInterval(interval);
-
-      restoreProgress(video);
-
-      startTracking(video);
+    if (
+      !isTopFrame &&
+      event.source === window.parent &&
+      isSupportedOrigin(event.origin) &&
+      event.data.type === "MEDIAVAULT_METADATA" &&
+      event.data.context &&
+      typeof event.data.context.animeTitle === "string" &&
+      typeof event.data.context.episode === "string" &&
+      typeof event.data.context.url === "string"
+    ) {
+      pageContext = event.data.context;
+      window.parent.postMessage({ type: "MEDIAVAULT_METADATA_ACK" }, event.origin);
+      if (activeVideo) restoreProgress(activeVideo, pageContext);
+      startVideoTracking();
     }
+  });
 
-  }, 1000);
-}
+  async function restoreProgress(video, context) {
+    try {
+      const { animeData } = await chrome.storage.local.get("animeData");
+      if (
+        !animeData ||
+        animeData.url !== context.url ||
+        animeData.animeTitle !== context.animeTitle ||
+        animeData.episode !== context.episode
+      ) return;
 
-/*
-========================================
-TRACK VIDEO
-========================================
-*/
+      const duration = Number(animeData.duration);
+      const savedTime = Number(animeData.currentTime);
+      if (!Number.isFinite(savedTime) || savedTime <= 5) return;
 
-function restoreProgress(video) {
-
-  chrome.storage.local.get(
-    ["animeData"],
-    (result) => {
-
-      const saved =
-        result.animeData;
-
-      if (!saved) {
-        return;
-      }
-
-      const currentUrl = getCurrentPageUrl();
-
-      const resumeUrl =
-        document.referrer &&
-        document.referrer.includes(
-          "anidoor.me"
-        )
-          ? document.referrer
-          : currentUrl;
-
-      if (saved.url === resumeUrl) {
-
-        video.currentTime =
-          saved.currentTime;
-
-        console.log(
-          "RESUMED TO:",
-          saved.currentTime
-        );
-
-      }
-
-    }
-  ); 
-
-}
-import { SUPPORTED_SITES } from "./sites.js";
-
-const site =
-  SUPPORTED_SITES[
-    window.location.hostname
-  ];
-
-if (!site) {
-  console.log(
-    "Site not supported"
-  );
-  return;
-}
-function getAnimeTitle() {
-  if (!site?.title)
-    return "Unknown";
-
-  const el =
-    document.querySelector(
-      site.title
-    );
-
-  return el?.innerText.trim()
-    || "Unknown";
-}
-
-function getEpisode() {
-  if (!site?.episode)
-    return "";
-
-  const el =
-    document.querySelector(
-      site.episode
-    );
-
-  return el?.innerText.trim()
-    || "";
-}
-
-function startSaving(video) {
-
-  chrome.storage.local.get(
-    ["currentAnimeInfo"],
-    (result) => {
-
-      let animeTitle =
-        result.currentAnimeInfo?.animeTitle ||
-        receivedAnimeTitle ||
-        getAnimeTitle();
-
-      let episode =
-        result.currentAnimeInfo?.episode ||
-        receivedEpisode ||
-        getEpisode();
-
-      if (receivedAnimeTitle) {
-        animeTitle =
-          receivedAnimeTitle;
-      }
-
-      if (receivedEpisode) {
-        episode =
-          receivedEpisode;
-      }
-
-      const animeUrl =
-        result.currentAnimeInfo?.url ||
-        "";
-
-      console.log("Anime:", animeTitle);
-      console.log("Episode:", episode);
-
-      let lastSavedTime = 0;
-
-      setInterval(() => {
-
-        const currentTime = video.currentTime;
-
-        const duration = video.duration;
-
-        if (
-          Math.abs(
-            currentTime - lastSavedTime
-          ) < 20
-        ) {
-          return;
+      const resume = () => {
+        if (video !== activeVideo || video.readyState < 1) return;
+        const maxTime = Number.isFinite(duration) && duration > 0
+          ? Math.min(duration - 5, video.duration - 5)
+          : video.duration - 5;
+        if (!Number.isFinite(maxTime) || maxTime <= 0) return;
+        try {
+          video.currentTime = Math.min(savedTime, maxTime);
+          lastSavedTime = video.currentTime;
+        } catch {
+          // Some streaming players expose a non-seekable video.
         }
+      };
 
-        lastSavedTime = currentTime;
-
-        const data = {
-          type: "Anime",
-          animeTitle,
-          episode,
-          currentTime,
-          duration,
-          url: getCurrentPageUrl(),
-          updatedAt:
-            new Date().toISOString()
-        };
-
-        chrome.storage.local.set({
-          animeData: data
-        });
-
-        chrome.runtime.sendMessage({
-          type: "SAVE_ANIME",
-          data
-        });
-
-        console.log(data);
-
-      }, 30000);
-
+      if (video.readyState >= 1) resume();
+      else video.addEventListener("loadedmetadata", resume, { once: true });
+    } catch (error) {
+      console.debug("MediaVault could not restore playback progress", error);
     }
-  );
-}
-
-function startTracking(video) {
-
-  console.log("START TRACKING RUNNING");
-  console.log("HOST:", window.location.hostname);
-
-  if (window !== window.top) {
-
-    const wait =
-      setInterval(() => {
-
-        if (
-          receivedAnimeTitle
-        ) {
-
-          clearInterval(
-            wait
-          );
-
-          startSaving(
-            video
-          );
-        }
-
-      }, 500);
-
-    return;
   }
 
-  startSaving(video);
-}
+  async function saveProgress(force = false) {
+    const video = activeVideo;
+    const context = pageContext || (isTopFrame ? getContext() : null);
+    if (!video || !context || !context.animeTitle || !context.episode) return;
 
-/*
-========================================
-START
-========================================
-*/
+    const currentTime = Number(video.currentTime);
+    if (!Number.isFinite(currentTime) || currentTime <= 0) return;
+    if (!force && lastSavedTime >= 0 && Math.abs(currentTime - lastSavedTime) < 15) return;
 
-waitForVideo();
+    lastSavedTime = currentTime;
+    const rawDuration = Number(video.duration);
+    const data = {
+      type: "Anime",
+      animeTitle: context.animeTitle,
+      episode: context.episode,
+      currentTime,
+      duration: Number.isFinite(rawDuration) ? rawDuration : 0,
+      url: context.url,
+      updatedAt: new Date().toISOString()
+    };
+
+    try {
+      await chrome.storage.local.set({ animeData: data });
+      chrome.runtime.sendMessage({ type: "SAVE_ANIME", data }).catch(() => {});
+    } catch (error) {
+      console.debug("MediaVault could not save playback progress", error);
+    }
+  }
+
+  function trackVideo(video) {
+    if (trackedVideos.has(video)) return;
+    if (activeVideo !== video) lastSavedTime = -1;
+    trackedVideos.add(video);
+    activeVideo = video;
+
+    const context = pageContext || (isTopFrame ? getContext() : null);
+    if (context) {
+      pageContext = context;
+      restoreProgress(video, context);
+    }
+
+    video.addEventListener("pause", () => saveProgress(true));
+    video.addEventListener("ended", () => saveProgress(true));
+    if (!saveTimer) {
+      saveTimer = window.setInterval(() => saveProgress(), 15000);
+    }
+  }
+
+  function startVideoTracking() {
+    const selector = site.video || "video";
+    let video = null;
+    try {
+      video = document.querySelector(selector) || document.querySelector("video");
+    } catch {
+      video = document.querySelector("video");
+    }
+    if (video) trackVideo(video);
+  }
+
+  if (isTopFrame) {
+    const syncContext = () => {
+      const context = getContext();
+      if (context) {
+        const changed = !pageContext || contextKey(pageContext) !== contextKey(context);
+        pageContext = context;
+        sendContextToFrames(context);
+        if (changed && activeVideo) restoreProgress(activeVideo, context);
+        if (changed) startVideoTracking();
+      }
+      startVideoTracking();
+    };
+
+    syncContext();
+    let syncPending = false;
+    const observer = new MutationObserver(() => {
+      if (syncPending) return;
+      syncPending = true;
+      window.setTimeout(() => {
+        syncPending = false;
+        syncContext();
+      }, 250);
+    });
+    observer.observe(document.documentElement, { childList: true, subtree: true });
+    window.setInterval(syncContext, 2000);
+  } else {
+    startVideoTracking();
+  }
+
+  window.addEventListener("pagehide", () => saveProgress(true));
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") saveProgress(true);
+  });
+})();

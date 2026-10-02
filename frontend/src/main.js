@@ -19,6 +19,19 @@ if (!requireAuth()) {
 
 initNavAuth();
 
+function syncSectionNavigation() {
+  const currentHash = window.location.hash || "#home";
+  document.querySelectorAll('.nav-links .nav-item[href^="#"]').forEach((link) => {
+    const current = link.getAttribute("href") === currentHash;
+    link.classList.toggle("active", current);
+    if (current) link.setAttribute("aria-current", "location");
+    else link.removeAttribute("aria-current");
+  });
+}
+
+syncSectionNavigation();
+window.addEventListener("hashchange", syncSectionNavigation);
+
 const socket = io(config.API_URL, {
   auth: { token: getToken() }
 });
@@ -60,6 +73,12 @@ const weatherDesc = document.querySelector(".weather-desc");
 const statusText = document.getElementById("system-status");
 const storageText = document.getElementById("storage-used");
 const activityText = document.getElementById("recent-activity");
+const mediaFormDialog = document.getElementById("media-form-dialog");
+const mediaForm = document.getElementById("media-form");
+const mediaFormError = document.getElementById("media-form-error");
+let editingMediaId = null;
+let activeTypeFilter = "All";
+let modalOpener = null;
 
 let allAnime = [];
 let searchDebounceTimer = null;
@@ -77,6 +96,40 @@ const reducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)")
 const isLowEndDevice = (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4) || (navigator.deviceMemory && navigator.deviceMemory <= 4);
 const shouldReduceMotion = reducedMotionQuery.matches || isLowEndDevice;
 let revealObserver = null;
+
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (character) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;"
+  })[character]);
+}
+
+function openMediaEditor(media = null) {
+  if (!mediaFormDialog || !mediaForm) return;
+  editingMediaId = media?._id || null;
+  document.getElementById("media-form-title").textContent = media ? "Edit title" : "Add a title";
+  document.getElementById("media-form-submit").textContent = media ? "Save changes" : "Save title";
+  document.getElementById("media-title").value = media?.animeTitle || "";
+  document.getElementById("media-type").value = media?.type || "Anime";
+  document.getElementById("media-episode").value = media?.episode || "Episode 1";
+  document.getElementById("media-current-time").value = media?.currentTime || 0;
+  document.getElementById("media-duration").value = media?.duration || 0;
+  document.getElementById("media-url").value = media?.url || "";
+  mediaFormError.textContent = "";
+  mediaFormDialog.showModal();
+  document.getElementById("media-title").focus();
+}
+
+function enablePosterFallback(container) {
+  container.querySelectorAll("img").forEach((image) => {
+    image.addEventListener("error", () => {
+      image.src = "/poster-fallback.svg";
+    }, { once: true });
+  });
+}
 
 function initRevealObserver() {
   if (revealObserver || shouldReduceMotion) {
@@ -194,7 +247,7 @@ async function loadAnimeDetails(title) {
     // Use the built-in fallback when persistent storage is unavailable.
   }
   const fallback = {
-    poster: cachedPoster || "https://placehold.co/300x400",
+    poster: cachedPoster || "/poster-fallback.svg",
     genres: ["Action", "Fantasy"]
   };
 
@@ -376,12 +429,25 @@ function animateWeeklyGoal(elementId, currentVal, targetGoal = 10, duration = 10
 
 async function renderAnime(data) {
   if (data.length === 0) {
+    const noMedia = allAnime.length === 0;
     animeList.innerHTML = `
-      <div class="empty-state">
-        <h2>No media found</h2>
-        <p>Start watching something!</p>
+      <div class="empty-state" role="status">
+        <h2>${noMedia ? "Your library is ready" : "No titles match"}</h2>
+        <p>${noMedia ? "Add a title to start your collection, or sync progress from the browser extension." : "Try another search or choose a different filter."}</p>
+        ${noMedia ? '<button class="library-add-button" type="button" data-action="add-media">+ Add a title</button>' : '<button class="library-add-button" type="button" data-action="clear-library-filters">Clear filters</button>'}
       </div>
     `;
+    animeList.querySelector('[data-action="add-media"]')?.addEventListener("click", () => openMediaEditor());
+    animeList.querySelector('[data-action="clear-library-filters"]')?.addEventListener("click", () => {
+      if (searchInput) searchInput.value = "";
+      activeTypeFilter = "All";
+      filterButtons.forEach((button) => {
+        const active = button.textContent.trim() === "All";
+        button.classList.toggle("active", active);
+        button.setAttribute("aria-pressed", String(active));
+      });
+      refreshLibraryResults();
+    });
     return;
   }
 
@@ -400,7 +466,7 @@ async function renderAnime(data) {
     card.className = "history-card reveal";
     card.innerHTML = `
       <div class="history-card-media">
-        <img src="${poster}" class="anime-cover" alt="${anime.animeTitle}" loading="lazy" decoding="async">
+        <img src="${escapeHtml(poster)}" class="anime-cover" alt="${escapeHtml(anime.animeTitle)} poster" loading="lazy" decoding="async">
         <span class="history-card-badge">${pct}% watched</span>
         <div class="history-card-overlay"></div>
         <button class="history-resume-btn" aria-label="Resume">
@@ -412,8 +478,8 @@ async function renderAnime(data) {
       </div>
 
       <div class="history-card-body">
-        <h3>${anime.animeTitle}</h3>
-        <p class="history-card-meta">${anime.episode}</p>
+        <h3>${escapeHtml(anime.animeTitle)}</h3>
+        <p class="history-card-meta">${escapeHtml(anime.episode)}</p>
         <div class="history-card-progress">
           <div class="progress-container">
             <div class="progress-fill" style="width: ${pct}%;"></div>
@@ -426,21 +492,23 @@ async function renderAnime(data) {
         </div>
       </div>
     `;
+    enablePosterFallback(card);
 
     card.addEventListener("click", () => {
+      modalOpener = document.activeElement;
       modal.style.display = "flex";
       modalBody.innerHTML = `
         <div class="modal-detail-wrapper" style="display: flex; gap: 20px;">
-          <img src="${poster}" style="width: 150px; border-radius: 12px; object-fit: cover;" loading="lazy" decoding="async">
+          <img src="${escapeHtml(poster)}" alt="${escapeHtml(anime.animeTitle)} poster" style="width: 150px; border-radius: 12px; object-fit: cover;" loading="lazy" decoding="async">
           <div>
-            <h1 style="font-family: var(--font-display); font-size: 28px; margin-bottom: 10px; color: var(--text);">${anime.animeTitle}</h1>
-            <p style="font-family: var(--font-mono); color: var(--primary); margin-bottom: 8px;">${anime.episode}</p>
+            <h1 style="font-family: var(--font-display); font-size: 28px; margin-bottom: 10px; color: var(--text);">${escapeHtml(anime.animeTitle)}</h1>
+            <p style="font-family: var(--font-mono); color: var(--primary); margin-bottom: 8px;">${escapeHtml(anime.episode)}</p>
             <p style="font-size: 14px; margin-bottom: 8px; color: var(--text-muted);">Last Position: ${formatTimecode(anime.currentTime)} / ${formatTimecode(anime.duration)}</p>
             <div class="progress-container" style="height: 6px; margin: 12px 0;">
               <div class="progress-fill" style="width: ${pct}%; background: linear-gradient(90deg, var(--primary), var(--secondary));"></div>
             </div>
             <div style="display: flex; gap: 8px; margin-top: 15px; flex-wrap: wrap;">
-              ${details.genres.map(g => `<span class="genre-chip" style="font-size: 11px; padding: 4px 8px;">${g}</span>`).join("")}
+              ${details.genres.map(g => `<span class="genre-chip" style="font-size: 11px; padding: 4px 8px;">${escapeHtml(g)}</span>`).join("")}
             </div>
           </div>
         </div>
@@ -466,8 +534,8 @@ async function renderAnime(data) {
       const dropdown = document.createElement("div");
       dropdown.className = "context-dropdown-menu glass-widget";
       dropdown.style.position = "absolute";
-      dropdown.style.top = `${e.pageY}px`;
-      dropdown.style.left = `${e.pageX}px`;
+      dropdown.style.top = `${Math.max(12, Math.min(e.clientY, window.innerHeight - 190)) + window.scrollY}px`;
+      dropdown.style.left = `${Math.max(12, Math.min(e.clientX, window.innerWidth - 190)) + window.scrollX}px`;
       dropdown.style.zIndex = "1000";
       dropdown.style.padding = "8px 0";
       dropdown.style.borderRadius = "12px";
@@ -477,13 +545,31 @@ async function renderAnime(data) {
       dropdown.style.backdropFilter = "blur(16px)";
       dropdown.style.minWidth = "160px";
 
+      dropdown.setAttribute("role", "group");
+      dropdown.setAttribute("aria-label", `Actions for ${anime.animeTitle}`);
       dropdown.innerHTML = `
-        <div class="context-item" style="padding: 10px 16px; cursor: pointer; color: var(--text); transition: background 0.2s; font-size: 13px;" data-action="resume">▶ Resume Watch</div>
-        <div class="context-item" style="padding: 10px 16px; cursor: pointer; color: var(--text); transition: background 0.2s; font-size: 13px;" data-action="details">ℹ Show Details</div>
-        <div class="context-item" style="padding: 10px 16px; cursor: pointer; color: var(--text); transition: background 0.2s; font-size: 13px;" data-action="copy">🔗 Copy Watch Link</div>
+        <button class="context-item" type="button" style="padding: 10px 16px; transition: background 0.2s; font-size: 13px;" data-action="resume">▶ Resume watch</button>
+        <button class="context-item" type="button" style="padding: 10px 16px; transition: background 0.2s; font-size: 13px;" data-action="details">ℹ Show details</button>
+        <button class="context-item" type="button" style="padding: 10px 16px; transition: background 0.2s; font-size: 13px;" data-action="edit">✎ Edit title</button>
+        <button class="context-item" type="button" style="padding: 10px 16px; transition: background 0.2s; font-size: 13px;" data-action="delete">⌫ Remove title</button>
+        <button class="context-item" type="button" style="padding: 10px 16px; transition: background 0.2s; font-size: 13px;" data-action="copy">🔗 Copy watch link</button>
       `;
+      enablePosterFallback(modalBody);
+      closeModal.focus();
 
       document.body.appendChild(dropdown);
+      dropdown.querySelector("button")?.focus();
+
+      const closeMenu = () => {
+        dropdown.remove();
+        document.removeEventListener("click", closeMenu);
+        document.removeEventListener("keydown", onMenuKeydown);
+        if (card.isConnected) contextBtn.focus();
+      };
+      const onMenuKeydown = (keyEvent) => {
+        if (keyEvent.key === "Escape") closeMenu();
+      };
+      document.addEventListener("keydown", onMenuKeydown);
 
       dropdown.addEventListener("click", (itemEvent) => {
         itemEvent.stopPropagation();
@@ -492,6 +578,10 @@ async function renderAnime(data) {
           if (anime.url) window.open(anime.url, "_blank");
         } else if (action === "details") {
           card.click();
+        } else if (action === "edit") {
+          openMediaEditor(anime);
+        } else if (action === "delete") {
+          removeMedia(anime);
         } else if (action === "copy") {
           if (anime.url) {
             navigator.clipboard.writeText(anime.url).then(() => {
@@ -499,13 +589,9 @@ async function renderAnime(data) {
             });
           }
         }
-        dropdown.remove();
+        closeMenu();
       });
 
-      const closeMenu = () => {
-        dropdown.remove();
-        document.removeEventListener("click", closeMenu);
-      };
       setTimeout(() => document.addEventListener("click", closeMenu), 10);
     });
 
@@ -538,15 +624,15 @@ async function renderContinueWatching() {
 
     card.innerHTML = `
       <div class="continue-media">
-        <img src="${poster}" alt="${anime.animeTitle}" loading="lazy" decoding="async" />
-        <span class="continue-badge-ep">${anime.episode}</span>
+        <img src="${escapeHtml(poster)}" alt="${escapeHtml(anime.animeTitle)} poster" loading="lazy" decoding="async" />
+        <span class="continue-badge-ep">${escapeHtml(anime.episode)}</span>
         <div class="continue-play-overlay">
           <div class="play-btn-circle">▶</div>
         </div>
       </div>
 
       <div class="continue-info">
-        <h3>${anime.animeTitle}</h3>
+        <h3>${escapeHtml(anime.animeTitle)}</h3>
         <p class="continue-meta">Runtime: ${runtimeStr}</p>
 
         <div class="continue-progress-row">
@@ -558,6 +644,7 @@ async function renderContinueWatching() {
         <button class="resume-btn">▶ Resume</button>
       </div>
     `;
+    enablePosterFallback(card);
 
     const resumeAction = (e) => {
       e.stopPropagation();
@@ -619,6 +706,36 @@ async function loadAnime() {
   }
 }
 
+function getFilteredLibrary() {
+  const search = searchInput?.value.trim().toLowerCase() || "";
+  return allAnime.filter((anime) => {
+    const matchesType = activeTypeFilter === "All" || (anime.type || "Anime") === activeTypeFilter;
+    const matchesSearch = !search ||
+      String(anime.animeTitle || "").toLowerCase().includes(search) ||
+      String(anime.type || "").toLowerCase().includes(search);
+    return matchesType && matchesSearch;
+  });
+}
+
+function refreshLibraryResults() {
+  return renderAnime(getFilteredLibrary());
+}
+
+async function removeMedia(media) {
+  if (!media?._id || !window.confirm(`Remove “${media.animeTitle}” from your library?`)) return;
+  try {
+    const response = await fetchWithAuth(`${config.API_URL}/api/progress/${encodeURIComponent(media._id)}`, {
+      method: "DELETE"
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(result.message || "Could not remove this title.");
+    await loadAnime();
+  } catch (error) {
+    errorMessage.textContent = error.message || "Could not remove this title. Check your connection and try again.";
+    errorMessage.style.display = "block";
+  }
+}
+
 async function loadAnimeData() {
   loader.style.display = "flex";
   errorMessage.style.display = "none";
@@ -639,11 +756,15 @@ async function loadAnimeData() {
     loader.style.display = "none";
     errorMessage.style.display = "block";
 
-    errorMessage.innerHTML = `
-      ❌ Unable to connect to MediaVault backend.
-      <br><br>
-      Start your backend server and refresh the page.
-    `;
+    errorMessage.replaceChildren();
+    const message = document.createElement("p");
+    message.textContent = "MediaVault could not reach the API. Check your connection or try again.";
+    const retryButton = document.createElement("button");
+    retryButton.type = "button";
+    retryButton.className = "library-add-button";
+    retryButton.textContent = "Try again";
+    retryButton.addEventListener("click", loadAnime);
+    errorMessage.append(message, retryButton);
 
     return;
   }
@@ -654,8 +775,6 @@ async function loadAnimeData() {
 
   refreshWatchHistory();
   await updateFeatured();
-
-  let filteredData = allAnime;
 
   const totalAnime = allAnime.length;
   const totalHours = parseFloat((
@@ -706,7 +825,7 @@ async function loadAnimeData() {
     }
   });
 
-  await renderAnime(filteredData);
+  await refreshLibraryResults();
   await renderContinueWatching();
 
   loader.style.display = "none";
@@ -724,55 +843,94 @@ socket.on("history-updated", () => {
 if (searchInput) {
   searchInput.addEventListener("input", () => {
     clearTimeout(searchDebounceTimer);
-    searchDebounceTimer = window.setTimeout(async () => {
-      const search = searchInput.value.trim().toLowerCase();
-
-      const filteredData = allAnime.filter(anime =>
-        anime.animeTitle.toLowerCase().includes(search) ||
-        (anime.type || "").toLowerCase().includes(search)
-      );
-
-      await renderAnime(filteredData);
-    }, 120);
+    searchDebounceTimer = window.setTimeout(refreshLibraryResults, 120);
   });
 }
 
+document.getElementById("add-media-btn")?.addEventListener("click", () => openMediaEditor());
+document.getElementById("media-form-close")?.addEventListener("click", () => mediaFormDialog.close());
+document.getElementById("media-form-cancel")?.addEventListener("click", () => mediaFormDialog.close());
+mediaFormDialog?.addEventListener("click", (event) => {
+  if (event.target === mediaFormDialog) mediaFormDialog.close();
+});
+
+mediaForm?.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  mediaFormError.textContent = "";
+  const submitButton = document.getElementById("media-form-submit");
+  submitButton.disabled = true;
+  submitButton.textContent = "Saving…";
+
+  const payload = {
+    animeTitle: document.getElementById("media-title").value.trim(),
+    type: document.getElementById("media-type").value,
+    episode: document.getElementById("media-episode").value.trim(),
+    currentTime: Number(document.getElementById("media-current-time").value),
+    duration: Number(document.getElementById("media-duration").value),
+    url: document.getElementById("media-url").value.trim()
+  };
+
+  try {
+    const url = editingMediaId
+      ? `${config.API_URL}/api/progress/${encodeURIComponent(editingMediaId)}`
+      : `${config.API_URL}/api/progress/save`;
+    const response = await fetchWithAuth(url, {
+      method: editingMediaId ? "PATCH" : "POST",
+      body: JSON.stringify(payload)
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(result.message || "Could not save this title.");
+
+    mediaFormDialog.close();
+    mediaForm.reset();
+    editingMediaId = null;
+    await loadAnime();
+  } catch (error) {
+    mediaFormError.textContent = error.message || "Could not save this title. Check your connection and try again.";
+  } finally {
+    submitButton.disabled = false;
+    submitButton.textContent = editingMediaId ? "Save changes" : "Save title";
+  }
+});
+
 closeModal.addEventListener("click", () => {
   modal.style.display = "none";
+  if (modalOpener?.isConnected) modalOpener.focus();
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && modal.style.display === "flex") {
+    modal.style.display = "none";
+    if (modalOpener?.isConnected) modalOpener.focus();
+  }
 });
 
 modal.addEventListener("click", (event) => {
   if (event.target === modal) {
     modal.style.display = "none";
+    if (modalOpener?.isConnected) modalOpener.focus();
   }
 });
 
 filterButtons.forEach(button => {
   button.addEventListener("click", async () => {
+    activeTypeFilter = button.innerText.trim();
     filterButtons.forEach(btn => btn.classList.remove("active"));
     button.classList.add("active");
-
-    const filter = button.innerText;
-    const filtered = filter === "All"
-      ? allAnime
-      : allAnime.filter(anime => (anime.type || "Anime") === filter);
-
-    await renderAnime(filtered);
+    filterButtons.forEach((btn) => btn.setAttribute("aria-pressed", String(btn === button)));
+    await refreshLibraryResults();
   });
 });
 
 quickCards.forEach(card => {
   const filter = card.dataset.filter || card.textContent.trim();
   card.addEventListener("click", async () => {
+    activeTypeFilter = filter;
     filterButtons.forEach(btn => btn.classList.remove("active"));
     const activeButton = Array.from(filterButtons).find(btn => btn.innerText === filter);
     if (activeButton) activeButton.classList.add("active");
-
-    const filtered = filter === "All"
-      ? allAnime
-      : allAnime.filter(anime => (anime.type || "Anime") === filter);
-
-    await renderAnime(filtered);
+    filterButtons.forEach((btn) => btn.setAttribute("aria-pressed", String(btn === activeButton)));
+    await refreshLibraryResults();
   });
 });
 
@@ -1277,7 +1435,7 @@ function setHeroBackground(imageUrl) {
 function renderGenreChips(genres) {
   if (!featuredGenres) return;
   featuredGenres.innerHTML = genres
-    .map(genre => `<span class="genre-chip">${genre}</span>`)
+    .map(genre => `<span class="genre-chip">${escapeHtml(genre)}</span>`)
     .join("");
 }
 

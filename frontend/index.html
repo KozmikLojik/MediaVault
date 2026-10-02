@@ -94,34 +94,34 @@
     <div class="nav-logo">MediaVault</div>
   </div>
   <div class="nav-links">
-    <a class="nav-item active" href="#">
-      <span class="nav-icon">🏠</span>
+    <a class="nav-item active" href="#home">
+      <span class="nav-icon" aria-hidden="true">🏠</span>
       <span>Home</span>
       <span class="nav-indicator"></span>
     </a>
-    <a class="nav-item" href="#">
-      <span class="nav-icon">📚</span>
+    <a class="nav-item" href="#library">
+      <span class="nav-icon" aria-hidden="true">📚</span>
       <span>Library</span>
       <span class="nav-indicator"></span>
     </a>
     <a class="nav-item" href="/stats.html">
-      <span class="nav-icon">📊</span>
+      <span class="nav-icon" aria-hidden="true">📊</span>
       <span>Statistics</span>
       <span class="nav-indicator"></span>
     </a>
     <a class="nav-item" href="#" id="theme-toggle" aria-haspopup="true" aria-expanded="false" aria-controls="theme-dropdown">
-      <span class="nav-icon">🎨</span>
+      <span class="nav-icon" aria-hidden="true">🎨</span>
       <span>Appearance</span>
       <span class="nav-indicator"></span>
     </a>
     <span id="nav-user" class="nav-user"></span>
     <a class="nav-item" href="#" id="logout-btn">
-      <span class="nav-icon">🚪</span>
+      <span class="nav-icon" aria-hidden="true">🚪</span>
       <span>Logout</span>
       <span class="nav-indicator"></span>
     </a>
-    <a class="nav-item" href="https://github.com/KozmikLojik/MediaVault" target="_blank">
-      <span class="nav-icon">🐙</span>
+    <a class="nav-item" href="https://github.com/KozmikLojik/MediaVault" target="_blank" rel="noopener noreferrer">
+      <span class="nav-icon" aria-hidden="true">🐙</span>
       <span>GitHub</span>
       <span class="nav-indicator"></span>
     </a>
@@ -146,7 +146,7 @@
   <header class="bento-dashboard">
 
     <!-- CINEMATIC FEATURED HERO -->
-    <section class="hero-panel category-anime">
+    <section class="hero-panel category-anime" id="home">
       <div class="hero-background hero-background-back"></div>
       <div class="hero-background hero-background-front visible"></div>
 
@@ -200,7 +200,7 @@
           <button class="hero-btn hero-btn-primary" id="featured-button">▶ Continue</button>
           <button class="hero-btn hero-btn-secondary" id="trailer-btn">▶ Trailer</button>
           <button class="hero-btn hero-btn-tertiary" id="mylist-btn">+ My List</button>
-          <button class="hero-btn hero-btn-icon" id="bookmark-btn">🔖</button>
+          <button class="hero-btn hero-btn-icon" id="bookmark-btn" type="button" aria-label="Bookmark featured title" aria-pressed="false">🔖</button>
         </div>
 
       </div>
@@ -395,7 +395,7 @@
     </div>
   </section>
 
-  <div id="error-message"></div>
+  <div id="error-message" role="alert" aria-live="assertive"></div>
 
   <div id="loader">
     <div class="reel-spinner" aria-hidden="true"></div>
@@ -421,18 +421,21 @@
         <p class="section-kicker">YOUR COLLECTION</p>
         <h2 class="section-title">Watch history</h2>
       </div>
+      <div class="library-actions">
+      <button class="library-add-button" id="add-media-btn" type="button">+ Add title</button>
       <label class="library-search">
         <span aria-hidden="true">⌕</span>
-        <input id="search" type="search" placeholder="Search your library" autocomplete="off" />
+        <input id="search" type="search" placeholder="Search your library" aria-label="Search your library" autocomplete="off" />
       </label>
+      </div>
     </div>
 
     <section id="filters" aria-label="Filter watch history">
-      <button class="filter-btn active">All</button>
-      <button class="filter-btn">Anime</button>
-      <button class="filter-btn">Movies</button>
-      <button class="filter-btn">TV</button>
-      <button class="filter-btn">K-Drama</button>
+      <button class="filter-btn active" type="button" aria-pressed="true">All</button>
+      <button class="filter-btn" type="button" aria-pressed="false">Anime</button>
+      <button class="filter-btn" type="button" aria-pressed="false">Movies</button>
+      <button class="filter-btn" type="button" aria-pressed="false">TV</button>
+      <button class="filter-btn" type="button" aria-pressed="false">K-Drama</button>
     </section>
 
     <section id="anime-list"></section>
@@ -519,9 +522,33 @@
 </div>
 
 <!-- MODAL -->
-<div id="modal" class="modal">
+<dialog id="media-form-dialog" class="media-form-dialog" aria-labelledby="media-form-title">
+  <form id="media-form" method="dialog">
+    <div class="media-form-heading">
+      <h2 id="media-form-title">Add a title</h2>
+      <button class="media-form-close" type="button" id="media-form-close" aria-label="Close">×</button>
+    </div>
+    <label>Title<input id="media-title" name="title" maxlength="250" required /></label>
+    <div class="media-form-row">
+      <label>Type<select id="media-type" name="type"><option>Anime</option><option>Movies</option><option>TV</option><option>K-Drama</option></select></label>
+      <label>Episode / status<input id="media-episode" name="episode" maxlength="160" required value="Episode 1" /></label>
+    </div>
+    <div class="media-form-row">
+      <label>Watched (seconds)<input id="media-current-time" name="currentTime" type="number" min="0" max="86400" value="0" required /></label>
+      <label>Runtime (seconds)<input id="media-duration" name="duration" type="number" min="0" max="86400" value="0" required /></label>
+    </div>
+    <label>Watch link <span class="optional-label">(optional)</span><input id="media-url" name="url" type="url" maxlength="2048" placeholder="https://" /></label>
+    <p id="media-form-error" class="media-form-error" role="alert" aria-live="polite"></p>
+    <div class="media-form-actions">
+      <button type="button" class="media-form-cancel" id="media-form-cancel">Cancel</button>
+      <button type="submit" class="media-form-submit" id="media-form-submit">Save title</button>
+    </div>
+  </form>
+</dialog>
+
+<div id="modal" class="modal" role="dialog" aria-modal="true" aria-label="Media details">
   <div class="modal-content">
-    <span id="close-modal">✖</span>
+    <button id="close-modal" type="button" aria-label="Close details">✖</button>
     <div id="modal-body"></div>
   </div>
 </div>

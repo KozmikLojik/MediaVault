@@ -1,31 +1,42 @@
 {
   "manifest_version": 3,
   "name": "MediaVault",
-  "version": "1.0",
-
+  "version": "1.1.0",
+  "description": "Save and resume anime playback progress across supported streaming sites.",
   "permissions": [
     "storage"
   ],
 
   "host_permissions": [
     "https://mediavault-backend-vxsb.onrender.com/*",
-    "https://*/*"
+    "https://*.anidoor.me/*",
+    "https://*.vidnest.fun/*",
+    "https://*.hianime.to/*",
+    "https://*.crunchyroll.com/*",
+    "https://*.animepahe.ru/*",
+    "https://*.youtube.com/*"
   ],
 
   "content_scripts": [
     {
       "matches": [
-        "https://anidoor.me/*",
-        "https://vidnest.fun/*",
-        "https://hianime.to/*"
+        "https://*.anidoor.me/*",
+        "https://*.vidnest.fun/*",
+        "https://*.hianime.to/*",
+        "https://*.crunchyroll.com/*",
+        "https://*.animepahe.ru/*",
+        "https://*.youtube.com/*"
       ],
-      "js": ["content.js"],
-      "all_frames": true
+      "js": ["sites.js", "content.js"],
+      "all_frames": true,
+      "match_about_blank": true,
+      "run_at": "document_idle"
     }
   ],
 
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "background.js",
+    "type": "module"
   },
 
   "action": {

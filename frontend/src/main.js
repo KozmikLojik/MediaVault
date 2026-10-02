@@ -4,6 +4,8 @@ import { io } from "socket.io-client";
 import config from "./config";
 import "./style.css";
 import "./performance.css";
+import "./redesign.css";
+import { themes, applyTheme as setTheme, initThemePicker } from "./services/theme.js";
 import {
   requireAuth,
   fetchWithAuth,
@@ -866,111 +868,8 @@ function updateClock() {
    DYNAMIC WALLPAPER SYSTEM
 ========================= */
 
-const themes = {
-  animeNight: {
-    name: "Anime Night",
-    bg: "#0B1020",
-    bg2: "#151932",
-    primary: "#7C5CFF",
-    secondary: "#5EEAD4",
-    accent: "#FF6B9A",
-    text: "#F8FAFC",
-    textMuted: "#94A3B8",
-    border: "rgba(255,255,255,.08)",
-    wallpaper: "/images/solo-leveling.jpg",
-    glowColor: "rgba(124,92,255,0.3)",
-    particleColor: "rgba(124,92,255,0.6)"
-  },
-  kdramaMood: {
-    name: "K-Drama Mood",
-    bg: "#111827",
-    bg2: "#1E2937",
-    primary: "#EC4899",
-    secondary: "#F472B6",
-    accent: "#F8FAFC",
-    text: "#FFFFFF",
-    textMuted: "#CBD5E1",
-    border: "rgba(255,255,255,.1)",
-    wallpaper: "/images/frieren.jpg",
-    glowColor: "rgba(236,72,153,0.3)",
-    particleColor: "rgba(236,72,153,0.6)"
-  },
-  cinemaMode: {
-    name: "Cinema Mode",
-    bg: "#0B0F19",
-    bg2: "#1E293B",
-    primary: "#EAB308",
-    secondary: "#EF4444",
-    accent: "#FFFFFF",
-    text: "#FFFFFF",
-    textMuted: "#94A3B8",
-    border: "rgba(255,255,255,.08)",
-    wallpaper: "/images/classroom.jpg",
-    glowColor: "rgba(234,179,8,0.3)",
-    particleColor: "rgba(234,179,8,0.6)"
-  },
-  cyberpunk: {
-    name: "Cyberpunk",
-    bg: "#050816",
-    bg2: "#0A1020",
-    primary: "#00E5FF",
-    secondary: "#FF00FF",
-    accent: "#7C5CFF",
-    text: "#FFFFFF",
-    textMuted: "#94A3B8",
-    border: "rgba(0,255,255,.2)",
-    wallpaper: "/images/solo-leveling.jpg",
-    glowColor: "rgba(0,229,255,0.3)",
-    particleColor: "rgba(0,229,255,0.6)"
-  },
-  minimal: {
-    name: "Minimal",
-    bg: "#111827",
-    bg2: "#1F2937",
-    primary: "#94A3B8",
-    secondary: "#FFFFFF",
-    accent: "#64748B",
-    text: "#FFFFFF",
-    textMuted: "#9CA3AF",
-    border: "rgba(255,255,255,.05)",
-    wallpaper: null,
-    glowColor: "rgba(148,163,184,0.2)",
-    particleColor: "rgba(148,163,184,0.5)"
-  }
-};
-
-function setTheme(themeKey) {
-  const theme = themes[themeKey];
-  if (!theme) return;
-
-  document.documentElement.style.setProperty("--bg", theme.bg);
-  document.documentElement.style.setProperty("--bg2", theme.bg2);
-  document.documentElement.style.setProperty("--primary", theme.primary);
-  document.documentElement.style.setProperty("--secondary", theme.secondary);
-  document.documentElement.style.setProperty("--accent", theme.accent);
-  document.documentElement.style.setProperty("--text", theme.text);
-  document.documentElement.style.setProperty("--text-muted", theme.textMuted);
-  document.documentElement.style.setProperty("--border", theme.border);
-  
-  // Update dynamic theme-specific effects
-  if (theme.glowColor) {
-    document.documentElement.style.setProperty("--theme-glow", theme.glowColor);
-  }
-  if (theme.particleColor) {
-    document.documentElement.style.setProperty("--theme-particle", theme.particleColor);
-  }
-
-  localStorage.setItem("mediavault-theme", themeKey);
-}
-
-function loadSavedTheme() {
-  const savedTheme = localStorage.getItem("mediavault-theme");
-  if (savedTheme && themes[savedTheme]) {
-    setTheme(savedTheme);
-  }
-}
-
-loadSavedTheme();
+const initialSavedTheme = localStorage.getItem("mediavault-theme");
+if (initialSavedTheme && themes[initialSavedTheme]) setTheme(initialSavedTheme);
 
 /* =========================
    ROTATING FEATURED PRESENTATION
@@ -982,8 +881,8 @@ const featuredMedia = [
     title: "Solo Leveling",
     desc: "The weakest hunter becomes humanity's strongest weapon.",
     category: "Anime",
-    wallpaper: "https://images.unsplash.com/photo-1518837695005-2083093ee35b?w=1600&q=80",
-    poster: "https://cdn.myanimelist.net/images/anime/1901/139991.jpg",
+    wallpaper: "https://image.tmdb.org/t/p/w1280/geCRueV3ElhRTr0xtJuEWJt6dJ1.jpg",
+    poster: "https://image.tmdb.org/t/p/w500/geCRueV3ElhRTr0xtJuEWJt6dJ1.jpg",
     accentColor: "#7C5CFF",
     buttonText: "▶ Continue",
     rating: "9.7",
@@ -998,8 +897,8 @@ const featuredMedia = [
     title: "Frieren: Beyond Journey's End",
     desc: "A beautiful journey after the hero's adventure ends.",
     category: "Anime",
-    wallpaper: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1600&q=80",
-    poster: "https://cdn.myanimelist.net/images/anime/1015/138006.jpg",
+    wallpaper: "https://image.tmdb.org/t/p/w1280/96RT2A47UdzWlUfvIERFyBsLhL2.jpg",
+    poster: "https://image.tmdb.org/t/p/w500/dqZENchTd7lp5zht7BdlqM7RBhD.jpg",
     accentColor: "#8B5CF6",
     buttonText: "▶ Explore",
     rating: "9.1",
@@ -1014,8 +913,8 @@ const featuredMedia = [
     title: "Demon Slayer",
     desc: "A boy hunts demons to restore his family and cure his sister.",
     category: "Anime",
-    wallpaper: "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=1600&q=80",
-    poster: "https://cdn.myanimelist.net/images/anime/1286/99889.jpg",
+    wallpaper: "https://image.tmdb.org/t/p/w1280/nTvM4mhqNlHIvUkI1gVnW6XP7GG.jpg",
+    poster: "https://image.tmdb.org/t/p/w500/xUfRZu2mi8jH6SzQEJGP6tjBuYj.jpg",
     accentColor: "#5EEAD4",
     buttonText: "▶ Watch Now",
     rating: "9.3",
@@ -1031,8 +930,8 @@ const featuredMedia = [
     title: "Interstellar",
     desc: "Love transcends dimensions and time.",
     category: "Movie",
-    wallpaper: "https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?w=1600&q=80",
-    poster: "https://m.media-amazon.com/images/M/MV5BZjdkOTU3MDktN2IxOS00OGEyLWFmMjktY2FiMmZkNWIyODZiXkEyXkFqcGdeQXVyMTMxODk2OTU@._V1_.jpg",
+    wallpaper: "https://image.tmdb.org/t/p/w1280/xu9zaAevzQ5nnrsXN6JcahLnG4i.jpg",
+    poster: "https://image.tmdb.org/t/p/w500/nBNZadXqJSdt05SHLqgT0HuC5Gm.jpg",
     accentColor: "#FBBF24",
     buttonText: "▶ Watch Trailer",
     rating: "9.0",
@@ -1047,8 +946,8 @@ const featuredMedia = [
     title: "The Batman",
     desc: "Vengeance becomes hope.",
     category: "Movie",
-    wallpaper: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=1600&q=80",
-    poster: "https://m.media-amazon.com/images/M/MV5BMDdmMTBiNTYtMDIzNi00NGVlLWIzMDYtZTk3MTQ3NGQxZGEwXkEyXkFqcGdeQXVyMzMwOTU5MDk@._V1_.jpg",
+    wallpaper: "https://image.tmdb.org/t/p/w1280/5P8SmMzSNYikXpxil6BYzJ16611.jpg",
+    poster: "https://image.tmdb.org/t/p/w500/74xTEgt7R36Fpooo50r9T25onhq.jpg",
     accentColor: "#F97316",
     buttonText: "▶ Explore",
     rating: "8.3",
@@ -1063,8 +962,8 @@ const featuredMedia = [
     title: "John Wick: Chapter 4",
     desc: "The Baba Yaga returns with unstoppable force.",
     category: "Movie",
-    wallpaper: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=1600&q=80",
-    poster: "https://m.media-amazon.com/images/M/MV5BMDExZGMyOTMtYjRjYi00NDQzLWJhNTktZDVmZTc5M2YyNzcyXkEyXkFqcGdeQXVyMjM4NTMxNDY@._V1_.jpg",
+    wallpaper: "https://image.tmdb.org/t/p/w1280/h8gHn0OzBoaefsYseUByqsmEDMY.jpg",
+    poster: "https://image.tmdb.org/t/p/w500/vZloFAK7NmvMGKE7VkF5UHaz0I.jpg",
     accentColor: "#F97316",
     buttonText: "▶ Continue",
     rating: "7.9",
@@ -1080,8 +979,8 @@ const featuredMedia = [
     title: "Breaking Bad",
     desc: "A high school teacher turns to crime after a shocking diagnosis.",
     category: "TV",
-    wallpaper: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=1600&q=80",
-    poster: "https://m.media-amazon.com/images/M/MV5BYmQ4YWMxYzUtZjZmYi00ZWQzLWE4MzItYWE1YzE2Njc1Y2I0XkEyXkFqcGdeQXVyMTkxNjUyNQ@@._V1_.jpg",
+    wallpaper: "https://image.tmdb.org/t/p/w1280/bsNm9z2TJfe0WO3RedPGWQ8mG1X.jpg",
+    poster: "https://image.tmdb.org/t/p/w500/ggFHVNu6YYI5L9pCfOacjizRGt.jpg",
     accentColor: "#3B82F6",
     buttonText: "▶ Start Watching",
     rating: "9.5",
@@ -1096,8 +995,8 @@ const featuredMedia = [
     title: "The Last of Us",
     desc: "A hardened survivor protects a girl who may be humanity's last hope.",
     category: "TV",
-    wallpaper: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=1600&q=80",
-    poster: "https://m.media-amazon.com/images/M/MV5BZGUzYTI3NjctYjU0Yi00NjRkLTkwZjItZjY5ZTg3Y2Q0NTVkXkEyXkFqcGdeQXVyMTMxODk2OTU@._V1_.jpg",
+    wallpaper: "https://image.tmdb.org/t/p/w1280/uDgy6hyPd82kOHh6I95FLtLnj6p.jpg",
+    poster: "https://image.tmdb.org/t/p/w500/uKvVjHNqB5VmOrdxqAt2F7J78ED.jpg",
     accentColor: "#2563EB",
     buttonText: "▶ Resume",
     rating: "9.1",
@@ -1113,8 +1012,8 @@ const featuredMedia = [
     title: "Weak Hero Class 1",
     desc: "A bullied student fights back with strategy and resolve.",
     category: "K-Drama",
-    wallpaper: "https://images.unsplash.com/photo-1516410529446-2c777cb7366d?w=1600&q=80",
-    poster: "https://m.media-amazon.com/images/M/MV5BYmZkNDJkNTMtZGViYS00YjZmLTg3MTMtMzVhODk4MzIyYmZmXkEyXkFqcGdeQXVyMTE1MzI3NzIx._V1_.jpg",
+    wallpaper: "https://image.tmdb.org/t/p/w1280/hS9VVF5ffTVWNoC9B48QNsZFGy9.jpg",
+    poster: "https://image.tmdb.org/t/p/w500/hS9VVF5ffTVWNoC9B48QNsZFGy9.jpg",
     accentColor: "#EC4899",
     buttonText: "▶ Resume",
     rating: "8.8",
@@ -1129,8 +1028,8 @@ const featuredMedia = [
     title: "Kingdom",
     desc: "A crown prince fights to save his kingdom from a dark plague.",
     category: "K-Drama",
-    wallpaper: "https://images.unsplash.com/photo-1516205651411-8470b0e32669?w=1600&q=80",
-    poster: "https://m.media-amazon.com/images/M/MV5BMjE0MzA3NTUtZjE5My00YzZkLWIzN2YtMjc1NTYyNDhiNTc4XkEyXkFqcGdeQXVyMTMxODk2OTU@._V1_.jpg",
+    wallpaper: "https://image.tmdb.org/t/p/w1280/AsICtiVtz4icMQQRwDvOzfaTzjK.jpg",
+    poster: "https://image.tmdb.org/t/p/w500/AsICtiVtz4icMQQRwDvOzfaTzjK.jpg",
     accentColor: "#F43F5E",
     buttonText: "▶ Watch Now",
     rating: "8.9",
@@ -1145,8 +1044,8 @@ const featuredMedia = [
     title: "Moving",
     desc: "Hidden powers, family secrets, and a world on the brink.",
     category: "K-Drama",
-    wallpaper: "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=1600&q=80",
-    poster: "https://m.media-amazon.com/images/M/MV5BZjM5YjhkOTEtYTVkYy00OTJhLThjOWEtNDdiMDVmNWUyM2QzXkEyXkFqcGdeQXVyMTE1MzI3NzIx._V1_.jpg",
+    wallpaper: "https://image.tmdb.org/t/p/w1280/6jdg6tpr9sF5T27KHCegr8iaozE.jpg",
+    poster: "https://image.tmdb.org/t/p/w500/6jdg6tpr9sF5T27KHCegr8iaozE.jpg",
     accentColor: "#F43F5E",
     buttonText: "▶ Continue",
     rating: "8.5",
@@ -1161,8 +1060,8 @@ const featuredMedia = [
     title: "Vincenzo",
     desc: "A consigliere takes on a corrupt conglomerate with clever fire.",
     category: "K-Drama",
-    wallpaper: "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=1600&q=80",
-    poster: "https://m.media-amazon.com/images/M/MV5BZjQxYzBlYTQtMzQzYy00YjUyLTgxNTUtYzQzODA5YzExZDRmXkEyXkFqcGdeQXVyMTE1MzI3NzIx._V1_.jpg",
+    wallpaper: "https://image.tmdb.org/t/p/w1280/wRXipR4toIxffb246XYkWJ7ySes.jpg",
+    poster: "https://image.tmdb.org/t/p/w500/wRXipR4toIxffb246XYkWJ7ySes.jpg",
     accentColor: "#F97316",
     buttonText: "▶ Resume",
     rating: "8.7",
@@ -1172,6 +1071,150 @@ const featuredMedia = [
     studio: "tvN",
     status: "completed",
     genres: ["Crime", "Drama", "Comedy"]
+  },
+  {
+    title: "Oppenheimer",
+    desc: "The making of the atomic bomb changes the world—and its creator forever.",
+    category: "Movie",
+    wallpaper: "https://image.tmdb.org/t/p/w1280/fm6KqXpk3M2HVveHwCrBSSBaO0V.jpg",
+    poster: "https://image.tmdb.org/t/p/w500/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg",
+    accentColor: "#c99c68",
+    buttonText: "▶ Explore",
+    rating: "8.3",
+    imdb: "8.3",
+    duration: "3h 00m",
+    episodes: "3h 00m",
+    studio: "Universal Pictures",
+    status: "completed",
+    genres: ["Biography", "Drama", "History"]
+  },
+  {
+    title: "Peaky Blinders",
+    desc: "A razor-sharp family saga of ambition, loyalty, and power in postwar Birmingham.",
+    category: "TV",
+    wallpaper: "https://image.tmdb.org/t/p/w1280/9ajQxbY28xuFPUoPfNXH2f8Cyi4.jpg",
+    poster: "https://image.tmdb.org/t/p/w500/vUUqzWa2LnHIVqkaKVlVGkVcZIW.jpg",
+    accentColor: "#b68b62",
+    buttonText: "▶ Start Watching",
+    rating: "8.8",
+    imdb: "8.7",
+    duration: "6 Seasons",
+    episodes: "36 Episodes",
+    studio: "BBC",
+    status: "completed",
+    genres: ["Crime", "Drama", "Historical"]
+  },
+  {
+    title: "The Godfather",
+    desc: "An intimate, unforgettable portrait of family, loyalty, and the cost of power.",
+    category: "Movie",
+    wallpaper: "https://image.tmdb.org/t/p/w1280/6xKCYgH16UuwEGAyroLU6p8HLIn.jpg",
+    poster: "https://image.tmdb.org/t/p/w500/d4KNaTrltq6bpkFS01pYtyXa09m.jpg",
+    accentColor: "#c99c68",
+    buttonText: "▶ Explore",
+    rating: "9.2",
+    imdb: "9.2",
+    duration: "2h 55m",
+    episodes: "2h 55m",
+    studio: "Paramount Pictures",
+    status: "completed",
+    genres: ["Crime", "Drama"]
+  },
+  {
+    title: "The Shawshank Redemption",
+    desc: "A quiet story of friendship and hope that endures against all odds.",
+    category: "Movie",
+    wallpaper: "https://image.tmdb.org/t/p/w1280/kXfqcdQKsToO0OUXHcrrNCHDBzO.jpg",
+    poster: "https://image.tmdb.org/t/p/w500/9cqNxx0GxF0bflZmeSMuL5tnGzr.jpg",
+    accentColor: "#9caa9b",
+    buttonText: "▶ Explore",
+    rating: "9.3",
+    imdb: "9.3",
+    duration: "2h 22m",
+    episodes: "2h 22m",
+    studio: "Castle Rock",
+    status: "completed",
+    genres: ["Drama"]
+  },
+  {
+    title: "Dark",
+    desc: "Four families uncover a mystery that stretches across generations and time.",
+    category: "TV",
+    wallpaper: "https://image.tmdb.org/t/p/w1280/1DLjjvSWMYo17B7wuz6YikB96hH.jpg",
+    poster: "https://image.tmdb.org/t/p/w500/1DLjjvSWMYo17B7wuz6YikB96hH.jpg",
+    accentColor: "#7b9c9c",
+    buttonText: "▶ Start Watching",
+    rating: "8.7",
+    imdb: "8.7",
+    duration: "3 Seasons",
+    episodes: "26 Episodes",
+    studio: "Netflix",
+    status: "completed",
+    genres: ["Sci-Fi", "Mystery", "Drama"]
+  },
+  {
+    title: "Inception",
+    desc: "A team enters layered dreams to plant an idea that could change everything.",
+    category: "Movie",
+    wallpaper: "https://image.tmdb.org/t/p/w1280/8ZTVqvKDQ8emSGUEMjsS4yHAwrp.jpg",
+    poster: "https://image.tmdb.org/t/p/w500/oYuLEt3zVCKq57qu2F8dT7NIa6f.jpg",
+    accentColor: "#c99c68",
+    buttonText: "▶ Explore",
+    rating: "8.8",
+    imdb: "8.8",
+    duration: "2h 28m",
+    episodes: "2h 28m",
+    studio: "Warner Bros.",
+    status: "completed",
+    genres: ["Sci-Fi", "Action", "Thriller"]
+  },
+  {
+    title: "Squid Game",
+    desc: "Cash-strapped contestants enter childhood games with life-changing stakes.",
+    category: "TV",
+    wallpaper: "https://image.tmdb.org/t/p/w1280/qZtAf4Z1lazGQoYVXiHOrvLr5lI.jpg",
+    poster: "https://image.tmdb.org/t/p/w500/dDlEmu3EZ0Pgg93K2SVNLCjCSvE.jpg",
+    accentColor: "#3B82F6",
+    buttonText: "▶ Start Watching",
+    rating: "8.0",
+    imdb: "8.0",
+    duration: "3 Seasons",
+    episodes: "22 Episodes",
+    studio: "Netflix",
+    status: "completed",
+    genres: ["Thriller", "Drama", "Mystery"]
+  },
+  {
+    title: "Guardian: The Lonely and Great God",
+    desc: "An immortal guardian searches for the one person who can end his eternal life.",
+    category: "K-Drama",
+    wallpaper: "https://image.tmdb.org/t/p/w1280/uoA7xBzCt3XXqL5fMmB8pmYgABJ.jpg",
+    poster: "https://image.tmdb.org/t/p/w500/sPkxHNw5BFvuCFGWw825TS7n6X3.jpg",
+    accentColor: "#EC4899",
+    buttonText: "▶ Explore",
+    rating: "8.7",
+    imdb: "8.6",
+    duration: "16 Episodes",
+    episodes: "16 Episodes",
+    studio: "tvN",
+    status: "completed",
+    genres: ["Fantasy", "Romance", "Drama"]
+  },
+  {
+    title: "Attack on Titan",
+    desc: "Humanity fights for survival behind walls that hide an impossible truth.",
+    category: "Anime",
+    wallpaper: "https://image.tmdb.org/t/p/w1280/zVMyvNowgbsBAL6O6esWfRpAcOb.jpg",
+    poster: "https://image.tmdb.org/t/p/w500/hTP1DtLGFamjfu8WqjnuQdP1n4i.jpg",
+    accentColor: "#7C5CFF",
+    buttonText: "▶ Explore",
+    rating: "9.1",
+    imdb: "9.1",
+    duration: "4 Seasons",
+    episodes: "87 Episodes",
+    studio: "MAPPA",
+    status: "completed",
+    genres: ["Action", "Fantasy", "Drama"]
   }
 ];
 
@@ -1291,6 +1334,8 @@ async function updateFeatured() {
     heroTag.textContent = item.category;
     featuredCategory.textContent = item.category;
     featuredTitle.textContent = item.title;
+    const featuredIndexLabel = document.getElementById("featured-index");
+    if (featuredIndexLabel) featuredIndexLabel.textContent = `${String(featuredIndex + 1).padStart(2, "0")} / ${String(featuredMedia.length).padStart(2, "0")}`;
     featuredDesc.textContent = item.desc;
     featuredRating.textContent = `★★★★★ ${item.rating}`;
     featuredDuration.textContent = item.duration;
@@ -1540,32 +1585,7 @@ if (savedTheme === "animeNight") {
    THEME DROPDOWN TOGGLE
 ========================= */
 
-document.addEventListener("DOMContentLoaded", () => {
-  const themeToggle = document.getElementById("theme-toggle");
-  const themeDropdown = document.getElementById("theme-dropdown");
-  const themeOptions = document.querySelectorAll(".theme-option");
-
-  if (themeToggle && themeDropdown) {
-    themeToggle.addEventListener("click", (e) => {
-      e.preventDefault();
-      themeDropdown.classList.toggle("active");
-    });
-
-    document.addEventListener("click", (e) => {
-      if (!themeDropdown.contains(e.target) && e.target !== themeToggle) {
-        themeDropdown.classList.remove("active");
-      }
-    });
-
-    themeOptions.forEach((option) => {
-      option.addEventListener("click", () => {
-        const themeKey = option.dataset.theme;
-        setTheme(themeKey);
-        themeDropdown.classList.remove("active");
-      });
-    });
-  }
-});
+initThemePicker();
 
 /* =========================
    COMMAND PALETTE

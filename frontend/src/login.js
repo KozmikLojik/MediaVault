@@ -4,6 +4,7 @@ import {
   getToken
 } from "./services/api";
 import "./style.css";
+import "./redesign.css";
 
 if (getToken()) {
   window.location.href = "/";

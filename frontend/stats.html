@@ -13,36 +13,47 @@
     content="width=device-width, initial-scale=1.0"
   />
 
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
   <title>Statistics — MediaVault</title>
 </head>
 
 <body>
 
   <nav class="navbar">
-    <div class="nav-logo">
-      🎬 MediaVault
+    <div class="nav-brand">
+      <div class="nav-mark" aria-hidden="true">M</div>
+      <div class="nav-logo">MediaVault</div>
     </div>
     <div class="nav-links">
-      <a href="/">Home</a>
-      <a href="/">Library</a>
-      <a class="active" href="/stats.html">Statistics</a>
-      <a href="#">Settings</a>
+      <a class="nav-item" href="/">Home</a>
+      <a class="nav-item" href="/#library">Library</a>
+      <a class="nav-item active" href="/stats.html">Statistics</a>
+      <a class="nav-item" href="#" id="theme-toggle" aria-haspopup="true" aria-expanded="false" aria-controls="theme-dropdown">Appearance</a>
       <span id="nav-user" class="nav-user"></span>
-      <a href="#" id="logout-btn">Logout</a>
-      <a
-        href="https://github.com/KozmikLojik/MediaVault"
-        target="_blank"
-      >
-        GitHub
-      </a>
+      <a class="nav-item" href="#" id="logout-btn">Logout</a>
     </div>
   </nav>
 
+  <section id="theme-dropdown" class="theme-dropdown" role="radiogroup" aria-label="Choose appearance" aria-labelledby="theme-picker-title">
+    <div class="theme-picker-heading"><span id="theme-picker-title">Appearance</span><small>Choose a color mood</small></div>
+    <button class="theme-option" type="button" role="radio" aria-checked="false" data-theme="animeNight"><span class="theme-preview anime-night"></span><span class="theme-copy"><span class="theme-name">Anime Night</span><small>Violet · deep slate</small></span><span class="theme-check" aria-hidden="true">✓</span></button>
+    <button class="theme-option" type="button" role="radio" aria-checked="false" data-theme="kdramaMood"><span class="theme-preview kdrama-mood"></span><span class="theme-copy"><span class="theme-name">K-Drama Mood</span><small>Soft rose · charcoal</small></span><span class="theme-check" aria-hidden="true">✓</span></button>
+    <button class="theme-option" type="button" role="radio" aria-checked="false" data-theme="cinemaMode"><span class="theme-preview cinema-mode"></span><span class="theme-copy"><span class="theme-name">Cinema Mode</span><small>Warm gold · graphite</small></span><span class="theme-check" aria-hidden="true">✓</span></button>
+    <button class="theme-option" type="button" role="radio" aria-checked="false" data-theme="cyberpunk"><span class="theme-preview cyberpunk"></span><span class="theme-copy"><span class="theme-name">Cyberpunk</span><small>Cool cyan · neon lilac</small></span><span class="theme-check" aria-hidden="true">✓</span></button>
+    <button class="theme-option" type="button" role="radio" aria-checked="false" data-theme="minimal"><span class="theme-preview minimal"></span><span class="theme-copy"><span class="theme-name">Minimal</span><small>Muted teal · soft black</small></span><span class="theme-check" aria-hidden="true">✓</span></button>
+  </section>
+
   <div class="page-container stats-page">
 
+    <div class="stats-cover" role="img" aria-label="Anime scenery banner"></div>
+
     <header class="stats-header">
-      <h1>Statistics</h1>
-      <p>Your watch history at a glance</p>
+      <p class="section-kicker">YOUR MEDIA JOURNAL</p>
+      <h1>Watching, in numbers</h1>
+      <p>A little perspective on everything you’ve watched.</p>
     </header>
 
     <div id="error-message"></div>
@@ -88,16 +99,12 @@
     <div class="stats-grid">
 
       <section class="stats-panel">
-        <h2 class="section-title">
-          Hours Watched by Anime
-        </h2>
+        <h2 class="stats-panel-title">Hours watched by anime</h2>
         <div id="hours-chart"></div>
       </section>
 
       <section class="stats-panel">
-        <h2 class="section-title">
-          Watch Time Distribution
-        </h2>
+        <h2 class="stats-panel-title">Watch time distribution</h2>
         <table class="stats-table">
           <thead>
             <tr>
@@ -111,16 +118,12 @@
       </section>
 
       <section class="stats-panel">
-        <h2 class="section-title">
-          Weekly Activity
-        </h2>
+        <h2 class="stats-panel-title">Weekly activity</h2>
         <div id="weekly-chart"></div>
       </section>
 
       <section class="stats-panel">
-        <h2 class="section-title">
-          Recently Watched
-        </h2>
+        <h2 class="stats-panel-title">Recently watched</h2>
         <div id="recent-list"></div>
       </section>
 

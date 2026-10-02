@@ -2,6 +2,8 @@ import { io } from "socket.io-client";
 
 import config from "./config";
 import "./style.css";
+import "./redesign.css";
+import { initThemePicker } from "./services/theme.js";
 import {
   requireAuth,
   fetchWithAuth,
@@ -25,6 +27,7 @@ if (!requireAuth()) {
 }
 
 initNavAuth();
+initThemePicker();
 
 const socket = io(config.API_URL, {
   auth: { token: getToken() }

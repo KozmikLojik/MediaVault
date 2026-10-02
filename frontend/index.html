@@ -12,7 +12,7 @@
     rel="stylesheet"
   />
 
-  <title>MediaVault OS</title>
+  <title>MediaVault — Your Library</title>
 </head>
 <body>
 
@@ -90,7 +90,8 @@
 <!-- ===== PREMIUM GLASS NAVBAR ===== -->
 <nav class="navbar">
   <div class="nav-brand">
-    <div class="nav-logo">🎞 MediaVault OS</div>
+    <div class="nav-mark" aria-hidden="true">M</div>
+    <div class="nav-logo">MediaVault</div>
   </div>
   <div class="nav-links">
     <a class="nav-item active" href="#">
@@ -108,7 +109,7 @@
       <span>Statistics</span>
       <span class="nav-indicator"></span>
     </a>
-    <a class="nav-item" href="#" id="theme-toggle">
+    <a class="nav-item" href="#" id="theme-toggle" aria-haspopup="true" aria-expanded="false" aria-controls="theme-dropdown">
       <span class="nav-icon">🎨</span>
       <span>Appearance</span>
       <span class="nav-indicator"></span>
@@ -129,28 +130,14 @@
 </nav>
 
 <!-- Theme Dropdown -->
-<div id="theme-dropdown" class="theme-dropdown">
-  <div class="theme-option" data-theme="animeNight">
-    <span class="theme-preview anime-night"></span>
-    <span class="theme-name">Anime Night</span>
-  </div>
-  <div class="theme-option" data-theme="kdramaMood">
-    <span class="theme-preview kdrama-mood"></span>
-    <span class="theme-name">K-Drama Mood</span>
-  </div>
-  <div class="theme-option" data-theme="cinemaMode">
-    <span class="theme-preview cinema-mode"></span>
-    <span class="theme-name">Cinema Mode</span>
-  </div>
-  <div class="theme-option" data-theme="cyberpunk">
-    <span class="theme-preview cyberpunk"></span>
-    <span class="theme-name">Cyberpunk</span>
-  </div>
-  <div class="theme-option" data-theme="minimal">
-    <span class="theme-preview minimal"></span>
-    <span class="theme-name">Minimal</span>
-  </div>
-</div>
+<section id="theme-dropdown" class="theme-dropdown" role="radiogroup" aria-label="Choose appearance" aria-labelledby="theme-picker-title">
+  <div class="theme-picker-heading"><span id="theme-picker-title">Appearance</span><small>Choose a color mood</small></div>
+  <button class="theme-option" type="button" role="radio" aria-checked="false" data-theme="animeNight"><span class="theme-preview anime-night"></span><span class="theme-copy"><span class="theme-name">Anime Night</span><small>Violet · deep slate</small></span><span class="theme-check" aria-hidden="true">✓</span></button>
+  <button class="theme-option" type="button" role="radio" aria-checked="false" data-theme="kdramaMood"><span class="theme-preview kdrama-mood"></span><span class="theme-copy"><span class="theme-name">K-Drama Mood</span><small>Soft rose · charcoal</small></span><span class="theme-check" aria-hidden="true">✓</span></button>
+  <button class="theme-option" type="button" role="radio" aria-checked="false" data-theme="cinemaMode"><span class="theme-preview cinema-mode"></span><span class="theme-copy"><span class="theme-name">Cinema Mode</span><small>Warm gold · graphite</small></span><span class="theme-check" aria-hidden="true">✓</span></button>
+  <button class="theme-option" type="button" role="radio" aria-checked="false" data-theme="cyberpunk"><span class="theme-preview cyberpunk"></span><span class="theme-copy"><span class="theme-name">Cyberpunk</span><small>Cool cyan · neon lilac</small></span><span class="theme-check" aria-hidden="true">✓</span></button>
+  <button class="theme-option" type="button" role="radio" aria-checked="false" data-theme="minimal"><span class="theme-preview minimal"></span><span class="theme-copy"><span class="theme-name">Minimal</span><small>Muted teal · soft black</small></span><span class="theme-check" aria-hidden="true">✓</span></button>
+</section>
 
 <!-- ===== MAIN CONTENT ===== -->
 <div class="page-container">
@@ -174,7 +161,7 @@
       <div class="hero-overlay">
         <!-- Top badge row -->
         <div class="hero-top-row">
-          <span class="featured-badge">✦ FEATURED</span>
+          <span class="featured-badge"><span class="featured-live-dot" aria-hidden="true"></span><span>PICKED FOR YOU</span><span class="featured-index" id="featured-index">01 / 17</span></span>
           <span class="hero-tag" id="featured-category">Anime</span>
         </div>
 
@@ -206,11 +193,6 @@
           <span id="featured-studio">A-1 Pictures</span>
           <span class="status-dot" id="featured-status"></span>
           <span id="featured-status-label">Airing</span>
-        </div>
-
-        <!-- Search -->
-        <div class="hero-search">
-          <input id="search" type="search" placeholder="Search anime, movies, dramas..." autocomplete="off" />
         </div>
 
         <!-- Action Buttons -->
@@ -252,12 +234,6 @@
           <p class="weather-temp">22°C</p>
           <p class="weather-desc">Clear Night</p>
         </div>
-      </div>
-
-      <div class="widget quote-widget glass-widget">
-        <div class="widget-shine"></div>
-        <div class="quote-icon">💬</div>
-        <p id="quote-text">"No matter how deep the night, it always turns to day."</p>
       </div>
 
       <div class="widget streak-widget glass-widget">
@@ -318,6 +294,11 @@
 
   </header>
 
+  <blockquote class="daily-quote">
+    <span class="daily-quote-mark" aria-hidden="true">✦</span>
+    <p id="quote-text">“No matter how deep the night, it always turns to day.”</p>
+  </blockquote>
+
   <!-- QUICK ACCESS DOCK -->
   <section class="quick-access-dock">
     <div class="quick-card" data-filter="Anime">
@@ -354,7 +335,14 @@
     </div>
   </section>
 
-  <!-- PREMIUM STATISTICS BENTO -->
+  <div class="section-heading stats-section-heading">
+    <div>
+      <p class="section-kicker">YOUR MEDIA JOURNAL</p>
+      <h2 class="section-title">At a glance</h2>
+    </div>
+  </div>
+
+  <!-- WATCH STATISTICS -->
   <section id="stats">
     <div class="stat-card">
       <div class="stat-icon">📚</div>
@@ -415,25 +403,40 @@
   </div>
 
   <!-- CONTINUE WATCHING -->
-  <h2 class="section-title">Continue Watching</h2>
+  <div class="section-heading">
+    <div>
+      <p class="section-kicker">PICK UP WHERE YOU LEFT OFF</p>
+      <h2 class="section-title">Continue watching</h2>
+    </div>
+  </div>
   <div class="continue-carousel-wrapper">
     <button class="carousel-arrow carousel-arrow-left" id="carousel-prev" aria-label="Previous">⟨</button>
     <div id="continue-watching"></div>
     <button class="carousel-arrow carousel-arrow-right" id="carousel-next" aria-label="Next">⟩</button>
   </div>
 
-  <!-- FILTERS -->
-  <section id="filters">
-    <button class="filter-btn active">All</button>
-    <button class="filter-btn">Anime</button>
-    <button class="filter-btn">Movies</button>
-    <button class="filter-btn">TV</button>
-    <button class="filter-btn">K-Drama</button>
-  </section>
+  <section class="library-section" id="library">
+    <div class="library-heading">
+      <div>
+        <p class="section-kicker">YOUR COLLECTION</p>
+        <h2 class="section-title">Watch history</h2>
+      </div>
+      <label class="library-search">
+        <span aria-hidden="true">⌕</span>
+        <input id="search" type="search" placeholder="Search your library" autocomplete="off" />
+      </label>
+    </div>
 
-  <!-- WATCH HISTORY -->
-  <h2 class="section-title">Watch History</h2>
-  <section id="anime-list"></section>
+    <section id="filters" aria-label="Filter watch history">
+      <button class="filter-btn active">All</button>
+      <button class="filter-btn">Anime</button>
+      <button class="filter-btn">Movies</button>
+      <button class="filter-btn">TV</button>
+      <button class="filter-btn">K-Drama</button>
+    </section>
+
+    <section id="anime-list"></section>
+  </section>
 
 </div>
 

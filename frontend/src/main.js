@@ -833,7 +833,12 @@ async function loadRecommendations({ ai = false, query = "" } = {}) {
     container.innerHTML = recommendations.length ? recommendations.map((item, index) => `
       <article class="recommendation-card">
         <img class="recommendation-poster" src="${escapeHtml(posterResults[index])}" alt="${escapeHtml(item.title)} poster" loading="lazy" decoding="async">
-        <div class="recommendation-copy"><span class="recommendation-meta">${escapeHtml(item.type)} · ${escapeHtml(item.year)} · ★ ${escapeHtml(item.rating)}</span><h4>${escapeHtml(item.title)}</h4><p>${escapeHtml(item.reason)}</p><small>${escapeHtml(item.genres.join(" · "))}</small></div>
+        <div class="recommendation-copy">
+          <div class="recommendation-meta"><span>${escapeHtml(item.type)}</span><span>${escapeHtml(item.year)}</span><span class="recommendation-rating">★ ${escapeHtml(item.rating)}</span></div>
+          <h4>${escapeHtml(item.title)}</h4>
+          <p>${escapeHtml(item.reason)}</p>
+          <small>${escapeHtml(item.genres.join(" · "))}</small>
+        </div>
         <div class="recommendation-actions"><button type="button" data-rec-add="${escapeHtml(item.id)}">Add to plan</button><button type="button" data-rec-hide="${escapeHtml(item.id)}" aria-label="Hide ${escapeHtml(item.title)}">Hide</button></div>
       </article>`).join("") : '<p>We need a little more library activity to find fresh picks.</p>';
     container.querySelectorAll("[data-rec-add]").forEach((button) => button.addEventListener("click", async () => {

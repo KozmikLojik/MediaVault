@@ -176,3 +176,129 @@ button, a, input, select { -webkit-tap-highlight-color: transparent; }
   .preview-card-content h3 { font-size: .85rem; }
   .preview-card-description { font-size: .7rem; }
 }
+
+/* Picked for you: readable poster-led cards with room for every detail. */
+.recommendation-panel {
+  padding: clamp(16px, 2.4vw, 26px);
+  border-radius: 18px;
+}
+.recommendation-heading { gap: 12px; flex-wrap: wrap; }
+.recommendation-heading h3 { margin: 0; font-size: clamp(1.2rem, 2vw, 1.5rem); letter-spacing: -.035em; }
+.recommendations-list {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 370px), 1fr));
+  gap: 14px;
+  margin-top: 16px;
+}
+.recommendation-card {
+  min-width: 0;
+  min-height: 184px;
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) auto;
+  grid-template-areas: "poster copy" "poster actions";
+  align-items: start;
+  gap: 10px 16px;
+  padding: 13px;
+  border-color: var(--surface-border);
+  border-radius: 15px;
+  background: linear-gradient(145deg, #1b2022, #15191b);
+  transition: border-color .18s ease, transform .18s ease, background .18s ease;
+}
+.recommendation-card:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--surface-accent) 40%, var(--surface-border));
+  background: #1c2223;
+}
+.recommendation-poster {
+  grid-area: poster;
+  width: 112px;
+  height: 158px;
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 11px;
+  object-fit: cover;
+  background: #242a2b;
+}
+.recommendation-copy { grid-area: copy; min-width: 0; align-self: center; }
+.recommendation-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+  color: var(--surface-muted);
+  font-size: .68rem;
+}
+.recommendation-meta span {
+  padding: 4px 7px;
+  border: 1px solid var(--surface-border);
+  border-radius: 999px;
+  background: rgba(255,255,255,.025);
+  line-height: 1;
+}
+.recommendation-meta .recommendation-rating {
+  border-color: rgba(242,198,109,.2);
+  color: #f2c66d;
+}
+.recommendation-copy h4 {
+  display: -webkit-box;
+  overflow: hidden;
+  margin: 9px 0 5px;
+  color: var(--surface-text);
+  font-size: 1.02rem;
+  line-height: 1.25;
+  letter-spacing: -.02em;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+.recommendation-copy p {
+  display: -webkit-box;
+  overflow: hidden;
+  margin: 0 0 7px;
+  color: var(--surface-muted);
+  font-size: .78rem;
+  line-height: 1.45;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+.recommendation-copy small {
+  display: block;
+  overflow: hidden;
+  color: #8e9b96;
+  font-size: .68rem;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.recommendation-actions {
+  grid-area: actions;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  align-self: end;
+}
+.recommendation-actions button {
+  min-height: 34px;
+  padding: 7px 10px;
+  font-size: .75rem;
+  font-weight: 650;
+}
+.recommendation-actions button:first-child { border-color: rgba(129,207,196,.28); color: #a8e4db; }
+.recommendation-actions button:hover { border-color: var(--surface-accent); }
+@media (max-width: 560px) {
+  .recommendation-panel { padding: 14px; }
+  .recommendation-heading { align-items: flex-start; }
+  .recommendations-list { grid-template-columns: minmax(0, 1fr); gap: 10px; margin-top: 13px; }
+  .recommendation-card { grid-template-columns: 82px minmax(0, 1fr); min-height: 132px; gap: 8px 12px; padding: 10px; }
+  .recommendation-poster { width: 82px; height: 122px; border-radius: 9px; }
+  .recommendation-copy h4 { margin: 7px 0 4px; font-size: .95rem; }
+  .recommendation-copy p { font-size: .74rem; -webkit-line-clamp: 2; }
+  .recommendation-meta { gap: 4px; font-size: .64rem; }
+  .recommendation-meta span { padding: 4px 6px; }
+  .recommendation-actions button { min-height: 32px; padding: 6px 8px; }
+}
+@media (max-width: 360px) {
+  .recommendation-card { grid-template-columns: 68px minmax(0, 1fr); gap: 7px 10px; }
+  .recommendation-poster { width: 68px; height: 102px; }
+  .recommendation-copy small { font-size: .62rem; }
+  .recommendation-actions button { font-size: .7rem; }
+}

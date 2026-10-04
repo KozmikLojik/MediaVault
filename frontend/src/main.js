@@ -470,7 +470,7 @@ async function renderAnime(data) {
   const detailsResults = await Promise.all(data.map(async (anime) => {
     if (isPublicPreview) {
       const featured = featuredMedia.find((item) => item.title === anime.animeTitle);
-      return { anime, details: { poster: featured?.poster || "/poster-fallback.svg", genres: featured?.genres || [] } };
+      return { anime, details: { poster: featured?.poster || "", genres: featured?.genres || [], featured } };
     }
     return { anime, details: { ...(await getAnimeDetails(anime.animeTitle)), ...(anime.genres?.length ? { genres: anime.genres } : {}) } };
   }));
@@ -483,6 +483,60 @@ async function renderAnime(data) {
     const runtimeStr = formatTimecode(anime.duration);
 
     const card = document.createElement("div");
+    if (isPublicPreview) {
+      const featured = details.featured || {};
+      const category = featured.category === "Movie" ? "Film" : featured.category || anime.type;
+      const score = featured.imdb ? `IMDb ${featured.imdb}` : "Curated pick";
+      card.className = "preview-library-card reveal";
+      card.dataset.category = category.toLowerCase().replace(/[^a-z]+/g, "-");
+      card.tabIndex = 0;
+      card.setAttribute("role", "button");
+      card.setAttribute("aria-label", `Explore ${anime.animeTitle}`);
+      card.innerHTML = `
+        <div class="preview-poster-art">
+          <span class="preview-poster-fallback" aria-hidden="true">${escapeHtml(category)}</span>
+          ${poster ? `<img src="${escapeHtml(poster)}" class="preview-poster-image" alt="${escapeHtml(anime.animeTitle)} poster" loading="lazy" decoding="async">` : ""}
+          <span class="preview-category-pill">${escapeHtml(category)}</span>
+          <span class="preview-view-hint">View details <span aria-hidden="true">↗</span></span>
+        </div>
+        <div class="preview-card-content">
+          <p class="preview-card-genres">${escapeHtml((featured.genres || []).slice(0, 3).join(" · "))}</p>
+          <h3>${escapeHtml(anime.animeTitle)}</h3>
+          <p class="preview-card-description">${escapeHtml(featured.desc || "Discover this curated pick in MediaVault.")}</p>
+          <div class="preview-card-footer"><span>✦ ${escapeHtml(score)}</span><span>Explore title</span></div>
+        </div>
+      `;
+      const posterImage = card.querySelector(".preview-poster-image");
+      posterImage?.addEventListener("error", () => {
+        posterImage.remove();
+        card.querySelector(".preview-poster-art")?.classList.add("poster-missing");
+      }, { once: true });
+      card.addEventListener("click", () => {
+        modalOpener = document.activeElement;
+        modal.style.display = "flex";
+        modalBody.innerHTML = `
+          <div class="preview-detail">
+            ${poster ? `<img src="${escapeHtml(poster)}" alt="${escapeHtml(anime.animeTitle)} poster" loading="lazy">` : ""}
+            <div class="preview-detail-copy"><p class="preview-card-genres">${escapeHtml(category)}${featured.genres?.length ? ` · ${escapeHtml(featured.genres.join(" · "))}` : ""}</p>
+              <h2>${escapeHtml(anime.animeTitle)}</h2><p>${escapeHtml(featured.desc || "Discover this curated pick in MediaVault.")}</p>
+              <p class="preview-detail-rating">★ ${escapeHtml(featured.rating || "—")} <span>${escapeHtml(score)}</span></p>
+              <a class="library-add-button" href="/register.html">Create an account to track it</a>
+            </div>
+          </div>`;
+        const detailImage = modalBody.querySelector("img");
+        detailImage?.addEventListener("error", () => detailImage.remove(), { once: true });
+        closeModal.focus();
+      });
+      card.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          card.click();
+        }
+      });
+      observeRevealElement(card);
+      fragment.appendChild(card);
+      return;
+    }
     card.className = "history-card reveal";
     card.innerHTML = `
       <div class="history-card-media">
@@ -1137,10 +1191,20 @@ if (isPublicPreview) {
   if (welcome) welcome.textContent = "Welcome";
   const libraryHeading = document.querySelector(".library-heading .section-title");
   if (libraryHeading) libraryHeading.textContent = "Explore the library";
+  const libraryKicker = document.querySelector(".library-heading .section-kicker");
+  if (libraryKicker) libraryKicker.textContent = "CURATED STARTER SHELF";
+  if (libraryHeading && !document.querySelector(".preview-library-intro")) {
+    const intro = document.createElement("p");
+    intro.className = "preview-library-intro";
+    intro.textContent = "A handpicked mix of films, series, anime, and K-dramas. Open any poster to explore it.";
+    libraryHeading.after(intro);
+  }
   const carouselHeading = document.querySelector("#continue-watching")?.closest(".continue-carousel-wrapper")?.previousElementSibling?.querySelector(".section-title");
   if (carouselHeading) carouselHeading.textContent = "Featured picks";
   const addButton = document.getElementById("add-media-btn");
   if (addButton) addButton.textContent = "Create your library";
+  const libraryToolbar = document.querySelector(".library-toolbar");
+  if (libraryToolbar) libraryToolbar.hidden = true;
   const recommendationPanel = document.querySelector(".recommendation-panel");
   if (recommendationPanel) recommendationPanel.hidden = true;
 }

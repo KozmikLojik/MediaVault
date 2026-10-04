@@ -5,6 +5,7 @@ import config from "./config";
 import "./style.css";
 import "./performance.css";
 import "./redesign.css";
+import "./polish.css";
 import { themes, applyTheme as setTheme, initThemePicker } from "./services/theme.js";
 import {
   fetchWithAuth,
@@ -1849,76 +1850,6 @@ function rotateQuote() {
   currentQuoteIndex = (currentQuoteIndex + 1) % allQuotes.length;
 }
 
-
-/* =========================
-   ATMOSPHERIC EFFECTS
-========================= */
-
-const atmosphericEffects = document.getElementById("atmospheric-effects");
-
-function createRain() {
-  const fragment = document.createDocumentFragment();
-  for (let i = 0; i < 100; i++) {
-    const drop = document.createElement("div");
-    drop.className = "rain-drop";
-    drop.style.left = Math.random() * 100 + "%";
-    drop.style.animationDuration = (Math.random() * 0.5 + 0.5) + "s";
-    drop.style.animationDelay = Math.random() * 2 + "s";
-    fragment.appendChild(drop);
-  }
-  atmosphericEffects.replaceChildren(fragment);
-}
-
-function createSnow() {
-  const fragment = document.createDocumentFragment();
-  for (let i = 0; i < 50; i++) {
-    const flake = document.createElement("div");
-    flake.className = "snowflake";
-    flake.style.left = Math.random() * 100 + "%";
-    flake.style.animationDuration = (Math.random() * 3 + 2) + "s";
-    flake.style.animationDelay = Math.random() * 5 + "s";
-    flake.style.width = (Math.random() * 6 + 4) + "px";
-    flake.style.height = flake.style.width;
-    fragment.appendChild(flake);
-  }
-  atmosphericEffects.replaceChildren(fragment);
-}
-
-function createSakura() {
-  const fragment = document.createDocumentFragment();
-  for (let i = 0; i < 30; i++) {
-    const petal = document.createElement("div");
-    petal.className = "sakura-petal";
-    petal.style.left = Math.random() * 100 + "%";
-    petal.style.animationDuration = (Math.random() * 5 + 5) + "s";
-    petal.style.animationDelay = Math.random() * 10 + "s";
-    petal.style.width = (Math.random() * 8 + 6) + "px";
-    petal.style.height = petal.style.width;
-    fragment.appendChild(petal);
-  }
-  atmosphericEffects.replaceChildren(fragment);
-}
-
-function setAtmosphericEffect(effect) {
-  atmosphericEffects.classList.remove("active");
-  atmosphericEffects.innerHTML = "";
-
-  if (effect === "rain") {
-    createRain();
-    atmosphericEffects.classList.add("active");
-  } else if (effect === "snow") {
-    createSnow();
-    atmosphericEffects.classList.add("active");
-  } else if (effect === "sakura") {
-    createSakura();
-    atmosphericEffects.classList.add("active");
-  }
-}
-
-const savedTheme = localStorage.getItem("mediavault-theme");
-if (savedTheme === "animeNight") {
-  setTimeout(() => setAtmosphericEffect("sakura"), 1000);
-}
 
 /* =========================
    THEME DROPDOWN TOGGLE

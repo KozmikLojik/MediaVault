@@ -89,8 +89,8 @@ export async function fetchWithAuth(
   if (response.status === 401) {
     if (getToken()) {
       logout();
-      window.location.href = "/login.html";
-      throw new Error("Your session expired. Please sign in again.");
+      window.location.href = "/#home";
+      throw new Error("Your session expired. Your public preview is still available from Home.");
     }
 
   }
@@ -135,8 +135,7 @@ export function initNavAuth() {
 
         logout();
 
-        window.location.href =
-          "/login.html";
+        window.location.href = "/#home";
 
       }
     );

@@ -3,6 +3,7 @@ import { io } from "socket.io-client";
 import config from "./config";
 import "./style.css";
 import "./redesign.css";
+import "./polish.css";
 import { initThemePicker } from "./services/theme.js";
 import {
   fetchWithAuth,

@@ -1,6 +1,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const WatchProgress = require("../models/WatchProgress");
+const WatchEvent = require("../models/WatchEvent");
 const { saveProgress, updateProgress, deleteProgress, validMedia } = require("../controllers/progressController");
 
 const userId = "64b000000000000000000001";
@@ -29,10 +30,14 @@ function requestHarness(body, params = {}) {
 }
 
 test("saveProgress upserts records into the authenticated user's library", async () => {
+  const originalFindOne = WatchProgress.findOne;
   const original = WatchProgress.findOneAndUpdate;
+  const originalCreate = WatchEvent.create;
   let filter;
   try {
+    WatchProgress.findOne = async () => null;
     WatchProgress.findOneAndUpdate = async (query) => { filter = query; return { _id: recordId }; };
+    WatchEvent.create = async () => ({});
     const { req, events } = requestHarness({ animeTitle: "Arcane", episode: "S1E1" });
     const res = responseHarness();
     await saveProgress(req, res);
@@ -41,15 +46,21 @@ test("saveProgress upserts records into the authenticated user's library", async
     assert.equal(res.statusCode, 200);
     assert.equal(events[0].room, `user:${userId}`);
   } finally {
+    WatchProgress.findOne = originalFindOne;
     WatchProgress.findOneAndUpdate = original;
+    WatchEvent.create = originalCreate;
   }
 });
 
 test("updateProgress scopes edits by both record id and account", async () => {
+  const originalFindOne = WatchProgress.findOne;
   const original = WatchProgress.findOneAndUpdate;
+  const originalCreate = WatchEvent.create;
   let filter;
   try {
-    WatchProgress.findOneAndUpdate = async (query) => { filter = query; return { _id: recordId }; };
+    WatchProgress.findOne = async () => ({ _id: recordId, episode: "S1E1", currentTime: 0 });
+    WatchProgress.findOneAndUpdate = async (query) => { filter = query; return { _id: recordId, episode: "S1E2", currentTime: 0, user: userId, animeTitle: "Arcane" }; };
+    WatchEvent.create = async () => ({});
     const { req } = requestHarness({ animeTitle: "Arcane", episode: "S1E2" }, { id: recordId });
     const res = responseHarness();
     await updateProgress(req, res);
@@ -57,15 +68,19 @@ test("updateProgress scopes edits by both record id and account", async () => {
     assert.deepEqual(filter, { _id: recordId, user: userId });
     assert.equal(res.statusCode, 200);
   } finally {
+    WatchProgress.findOne = originalFindOne;
     WatchProgress.findOneAndUpdate = original;
+    WatchEvent.create = originalCreate;
   }
 });
 
 test("deleteProgress scopes removals by both record id and account", async () => {
   const original = WatchProgress.findOneAndDelete;
+  const originalDeleteMany = WatchEvent.deleteMany;
   let filter;
   try {
     WatchProgress.findOneAndDelete = async (query) => { filter = query; return { _id: recordId }; };
+    WatchEvent.deleteMany = async () => ({ deletedCount: 0 });
     const { req, events } = requestHarness({}, { id: recordId });
     const res = responseHarness();
     await deleteProgress(req, res);
@@ -75,6 +90,7 @@ test("deleteProgress scopes removals by both record id and account", async () =>
     assert.equal(events.length, 1);
   } finally {
     WatchProgress.findOneAndDelete = original;
+    WatchEvent.deleteMany = originalDeleteMany;
   }
 });
 

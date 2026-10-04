@@ -5,6 +5,7 @@ import {
 } from "./services/api";
 import "./style.css";
 import "./redesign.css";
+import "./polish.css";
 
 if (getToken()) {
   window.location.href = "/";

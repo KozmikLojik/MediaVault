@@ -33,7 +33,9 @@ Titles can be marked Plan to watch, Watching, Completed, Paused, or Dropped. Add
 
 ### Watch history and recommendations
 
-The API records progress checkpoints and keeps them under the authenticated account. It also provides explainable recommendations based on genres, media type, favorites, and ratings. The first recommendation stage is deterministic and does not send watch history to an LLM. New manually added anime can be matched to AniList IDs and metadata.
+The API records progress checkpoints and keeps them under the authenticated account. It provides explainable recommendations based on genres, media type, favorites, and ratings, with an optional AI mode for natural-language requests such as “a tense thriller under two hours.” Configure `OPENAI_API_KEY` on the backend to enable it; `OPENAI_MODEL` defaults to `gpt-5-mini`. Without a key, taste-based recommendations continue to work.
+
+AI receives a limited profile of titles, genres, ratings, favorites, statuses, and the user's short request, plus the recommendation catalog. Personal notes, watch URLs, passwords, and tokens are not sent. AI results are restricted to catalog candidates and fall back to the explainable ranking if the service is unavailable. New manually added anime can be matched to AniList IDs and metadata.
 
 ### ✅ Progress Visualization
 
@@ -96,7 +98,7 @@ Use two Command Prompt windows. Node.js 20.19+ is recommended.
 ## Deployment settings
 
 * **Render PostgreSQL:** create a PostgreSQL database in Render in the same region as the API service. Copy its **internal database URL** from the database's Connect page. Render's internal URL is intended for services in the same region and uses its private network: https://render.com/docs/postgresql-creating-connecting.
-* **Render API:** set the service root directory to `backend`, build command to `npm install`, start command to `npm start`, and health check path to `/health`. Configure `DATABASE_URL` (the PostgreSQL internal URL), `JWT_SECRET` (a new private random value of at least 32 characters), and `FRONTEND_ORIGIN` (the exact deployed frontend origin) in Render's Environment settings. Use `DATABASE_SSL=true` only if your PostgreSQL provider specifically requires TLS for that connection.
+* **Render API:** set the service root directory to `backend`, build command to `npm install`, start command to `npm start`, and health check path to `/health`. Configure `DATABASE_URL` (the PostgreSQL internal URL), `JWT_SECRET` (a new private random value of at least 32 characters), and `FRONTEND_ORIGIN` (the exact deployed frontend origin) in Render's Environment settings. To enable AI picks, also add `OPENAI_API_KEY` and optionally `OPENAI_MODEL`. Keep the key in Render's backend environment only; never add it to Vercel or frontend environment variables. Use `DATABASE_SSL=true` only if your PostgreSQL provider specifically requires TLS for that connection.
 * **Vercel frontend:** set the project root directory to `frontend`, build command to `npm run build`, output directory to `dist`, and `VITE_API_URL` to the Render API origin (for example, `https://your-service.onrender.com`, without a trailing slash).
 * **Secret rotation:** credentials were present in older Git commits. Rotate any exposed credentials and replace Render's `JWT_SECRET` with a fresh random value of at least 32 characters. Redeploy the API and sign in again; replacing `JWT_SECRET` invalidates existing login tokens. Removing secrets from the current checkout alone does not erase Git history.
 

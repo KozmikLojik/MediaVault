@@ -806,13 +806,20 @@ function refreshLibraryResults() {
   return renderAnime(getFilteredLibrary());
 }
 
-async function loadRecommendations() {
+async function loadRecommendations({ ai = false, query = "" } = {}) {
   const container = document.getElementById("recommendations-list");
   if (!container) return;
+  const status = document.getElementById("recommendation-status");
+  const askButton = document.getElementById("ask-recommendations");
+  if (askButton) askButton.disabled = ai;
+  if (status) status.textContent = ai ? "Finding thoughtful matches…" : "";
   try {
-    const response = await fetchWithAuth(`${config.API_URL}/api/recommendations`);
+    const response = await fetchWithAuth(`${config.API_URL}/api/recommendations${ai ? "/ai" : ""}`, ai ? {
+      method: "POST", body: JSON.stringify({ query })
+    } : undefined);
     if (!response.ok) throw new Error("Recommendations are unavailable.");
-    const { recommendations = [] } = await response.json();
+    const { recommendations = [], method, message } = await response.json();
+    if (status) status.textContent = message || (method === "ai" ? "AI matched these picks to your library and request." : "Ranked from your genres, formats, ratings, and favorites.");
     const posterResults = await Promise.all(recommendations.map(async (item) => {
       if (item.type === "Anime") return (await getAnimeDetails(item.title)).poster;
       return featuredMedia.find((featured) => featured.title.toLowerCase() === item.title.toLowerCase() || featured.title.toLowerCase().replace(/^the /, "") === item.title.toLowerCase().replace(/^the /, ""))?.poster || "/poster-fallback.svg";
@@ -839,10 +846,18 @@ async function loadRecommendations() {
     }));
   } catch {
     container.innerHTML = '<p>Recommendations will appear when the API is available.</p>';
+    if (status) status.textContent = "Could not load recommendations. Check your connection and try again.";
+  } finally {
+    if (askButton) askButton.disabled = false;
   }
 }
 
 document.getElementById("refresh-recommendations")?.addEventListener("click", loadRecommendations);
+document.getElementById("ai-recommendation-form")?.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const query = document.getElementById("recommendation-query")?.value.trim() || "";
+  loadRecommendations({ ai: true, query });
+});
 
 async function removeMedia(media) {
   if (!media?._id || !window.confirm(`Remove “${media.animeTitle}” from your library?`)) return;

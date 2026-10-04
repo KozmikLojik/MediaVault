@@ -373,6 +373,13 @@
     </div>
     <section class="recommendation-panel" aria-labelledby="recommendation-title">
       <div class="recommendation-heading"><div><p class="section-kicker">BASED ON YOUR TASTE</p><h3 id="recommendation-title">Picked for you</h3></div><button id="refresh-recommendations" type="button">Refresh</button></div>
+      <form id="ai-recommendation-form" class="ai-recommendation-form">
+        <label class="visually-hidden" for="recommendation-query">Ask for a recommendation</label>
+        <input id="recommendation-query" type="text" maxlength="240" placeholder="Try “a tense thriller under two hours” (optional)" autocomplete="off">
+        <button id="ask-recommendations" type="submit">✦ Ask AI</button>
+      </form>
+      <p class="recommendation-privacy">OpenAI receives your titles, genres, ratings, statuses, and this request. Personal notes and watch links stay private.</p>
+      <p id="recommendation-status" class="recommendation-status" aria-live="polite"></p>
       <div id="recommendations-list" class="recommendations-list" aria-live="polite"><p>Finding picks from your library…</p></div>
     </section>
 

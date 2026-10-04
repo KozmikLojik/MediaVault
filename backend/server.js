@@ -14,6 +14,8 @@ app.disable("x-powered-by");
 const allowedOrigins = [
   "http://localhost:5173",
   "http://127.0.0.1:5173",
+  // Stable public Vercel production URL. Keep FRONTEND_ORIGIN configurable for future domains.
+  "https://media-vault-iota-topaz.vercel.app",
   ...(process.env.FRONTEND_ORIGIN || "")
     .split(",")
     .map((origin) => origin.trim())

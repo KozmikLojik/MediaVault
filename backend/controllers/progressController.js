@@ -1,9 +1,9 @@
-const mongoose = require("mongoose");
-const WatchProgress = require("../models/WatchProgress");
-const WatchEvent = require("../models/WatchEvent");
+const { randomUUID } = require("node:crypto");
+const { pool } = require("../config/db");
+const { toProgress, toEvent } = require("../models/serialize");
 
 const validStatuses = ["Plan to watch", "Watching", "Completed", "Paused", "Dropped"];
-const validMetadata = (body) => {
+const validMetadata = (body = {}) => {
   const result = {};
   if (typeof body.provider === "string") result.provider = body.provider.trim().slice(0, 24);
   if (typeof body.providerId === "string") result.providerId = body.providerId.trim().slice(0, 160);
@@ -18,135 +18,135 @@ const validMetadata = (body) => {
   return result;
 };
 
-const logWatchEvent = async (progress, eventType) => {
-  if (!progress) return;
-  await WatchEvent.create({ user: progress.user, progress: progress._id, title: progress.animeTitle, episode: progress.episode, currentTime: progress.currentTime, duration: progress.duration, eventType });
-};
-
 const validMedia = (body) => {
   if (!body || typeof body !== "object" || Array.isArray(body)) return null;
-
   const animeTitle = typeof body.animeTitle === "string" ? body.animeTitle.trim() : "";
   const episode = typeof body.episode === "string" ? body.episode.trim() : "";
   const currentTime = Number(body.currentTime ?? 0);
   const duration = Number(body.duration ?? 0);
   const type = typeof body.type === "string" ? body.type.trim() : "Anime";
   const url = typeof body.url === "string" ? body.url.trim() : "";
-
-  if (!animeTitle || animeTitle.length > 250) return null;
-  if (!episode || episode.length > 160) return null;
-  if (!Number.isFinite(currentTime) || currentTime < 0 || currentTime > 86400) return null;
-  if (!Number.isFinite(duration) || duration < 0 || duration > 86400) return null;
+  if (!animeTitle || animeTitle.length > 250 || !episode || episode.length > 160) return null;
+  if (!Number.isFinite(currentTime) || currentTime < 0 || currentTime > 86400 || !Number.isFinite(duration) || duration < 0 || duration > 86400) return null;
   if (!type || type.length > 40) return null;
   if (url) {
-    try {
-      if (!["http:", "https:"].includes(new URL(url).protocol)) return null;
-    } catch {
-      return null;
-    }
+    try { if (!["http:", "https:"].includes(new URL(url).protocol)) return null; } catch { return null; }
     if (url.length > 2048) return null;
   }
-
   return { animeTitle, episode, currentTime, duration, type, url };
 };
 
-const emitHistoryUpdated = (req) => {
-  req.app.get("io")?.to(`user:${req.user._id}`).emit("history-updated");
+const emitHistoryUpdated = (req) => req.app.get("io")?.to(`user:${req.user._id}`).emit("history-updated");
+const fieldColumns = {
+  animeTitle: "anime_title", episode: "episode", currentTime: "current_seconds", duration: "duration", url: "url", type: "type",
+  provider: "provider", providerId: "provider_id", genres: "genres", releaseYear: "release_year", format: "format", synopsis: "synopsis",
+  status: "status", rating: "rating", favorite: "favorite", notes: "notes"
+};
+const dbValue = (value) => Array.isArray(value) ? JSON.stringify(value) : value;
+
+const logWatchEvent = async (progress, eventType) => {
+  if (!progress) return;
+  await pool.query(
+    `INSERT INTO watch_events (id, user_id, progress_id, title, episode, current_seconds, duration, event_type)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+    [randomUUID(), progress.user_id, progress.id, progress.anime_title, progress.episode, progress.current_seconds, progress.duration, eventType]
+  );
 };
 
 const saveProgress = async (req, res) => {
   const media = validMedia(req.body);
-  if (!media) {
-    return res.status(400).json({
-      message: "Enter a title and episode, and use valid progress values and an http(s) link."
-    });
-  }
+  if (!media) return res.status(400).json({ message: "Enter a title and episode, and use valid progress values and an http(s) link." });
 
   const metadata = validMetadata(req.body);
-  const existing = await WatchProgress.findOne({ user: req.user._id, animeTitle: media.animeTitle });
+  const { rows: previousRows } = await pool.query("SELECT * FROM watch_progress WHERE user_id = $1 AND anime_title = $2", [req.user._id, media.animeTitle]);
+  const existing = previousRows[0];
   const changedEpisode = existing && existing.episode !== media.episode;
-  const checkpointDue = !existing || !existing.lastHistoryCheckpointTime || Date.now() - existing.lastHistoryCheckpointTime >= 5 * 60 * 1000 || changedEpisode;
-  const progress = await WatchProgress.findOneAndUpdate(
-    { user: req.user._id, animeTitle: media.animeTitle },
-    { $set: { ...media, ...metadata, updatedAt: new Date().toISOString(), ...(checkpointDue ? { lastHistoryCheckpointTime: Date.now(), lastHistoryEpisode: media.episode } : {}) }, $setOnInsert: { user: req.user._id } },
-    { new: true, upsert: true, runValidators: true, setDefaultsOnInsert: true }
-  );
-  if (checkpointDue && (!existing || changedEpisode || media.currentTime > (existing.currentTime || 0))) await logWatchEvent(progress, existing ? "progress" : "started");
+  const checkpointDue = !existing || !existing.last_history_checkpoint_time || Date.now() - Number(existing.last_history_checkpoint_time) >= 5 * 60 * 1000 || changedEpisode;
+  const fields = { ...media, ...metadata };
+  if (checkpointDue) {
+    fields.lastHistoryCheckpointTime = Date.now();
+    fields.lastHistoryEpisode = media.episode;
+  }
 
+  const entries = Object.entries(fields).map(([key, value]) => [
+    fieldColumns[key] || (key === "lastHistoryCheckpointTime" ? "last_history_checkpoint_time" : "last_history_episode"), dbValue(value)
+  ]);
+  const columns = ["id", "user_id", ...entries.map(([column]) => column)];
+  const values = [randomUUID(), req.user._id, ...entries.map(([, value]) => value)];
+  const placeholders = values.map((_, index) => `$${index + 1}`);
+  const updates = entries.map(([column]) => `${column} = EXCLUDED.${column}`);
+  updates.push("updated_at = NOW()");
+  const sql = `INSERT INTO watch_progress (${columns.join(", ")}) VALUES (${placeholders.join(", ")}) ON CONFLICT (user_id, anime_title) DO UPDATE SET ${updates.join(", ")} RETURNING *`;
+  const { rows } = await pool.query(sql, values);
+  const progress = rows[0];
+  if (checkpointDue && (!existing || changedEpisode || media.currentTime > Number(existing.current_seconds || 0))) {
+    await logWatchEvent(progress, existing ? "progress" : "started");
+  }
   emitHistoryUpdated(req);
-  return res.json({ message: "Saved successfully", progress });
+  return res.json({ message: "Saved successfully", progress: toProgress(progress) });
 };
 
 const getProgress = async (req, res) => {
-  const history = await WatchProgress.find({ user: req.user._id }).sort({ updatedAt: -1 });
-  const legacyItems = await WatchProgress.collection.find({ user: req.user._id, historySeeded: { $exists: false } }).toArray();
-  for (const item of legacyItems) {
-    await WatchEvent.findOneAndUpdate(
-      { progress: item._id, eventType: "snapshot" },
-      { $setOnInsert: { user: item.user, progress: item._id, title: item.animeTitle, episode: item.episode, currentTime: item.currentTime, duration: item.duration, eventType: "snapshot" } },
-      { upsert: true, new: true, setDefaultsOnInsert: true }
-    );
-    await WatchProgress.updateOne({ _id: item._id, user: req.user._id }, { $set: { historySeeded: true } });
-  }
-  for (const item of history) {
-    if (item.providerId) continue;
-    const slug = item.animeTitle.normalize("NFKD").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-    if (slug) {
-      item.provider = "mediavault";
-      item.providerId = `title:${slug}`;
-      await item.save({ validateBeforeSave: true });
+  const { rows } = await pool.query("SELECT * FROM watch_progress WHERE user_id = $1 ORDER BY updated_at DESC", [req.user._id]);
+  for (const row of rows) {
+    if (!row.history_seeded) {
+      await pool.query(
+        `INSERT INTO watch_events (id, user_id, progress_id, title, episode, current_seconds, duration, event_type)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, 'snapshot') ON CONFLICT (progress_id) WHERE event_type = 'snapshot' DO NOTHING`,
+        [randomUUID(), row.user_id, row.id, row.anime_title, row.episode, row.current_seconds, row.duration]
+      );
+      await pool.query("UPDATE watch_progress SET history_seeded = TRUE WHERE id = $1", [row.id]);
+      row.history_seeded = true;
+    }
+    if (!row.provider_id) {
+      const slug = row.anime_title.normalize("NFKD").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+      if (slug) {
+        row.provider = "mediavault";
+        row.provider_id = `title:${slug}`;
+        await pool.query("UPDATE watch_progress SET provider = $1, provider_id = $2 WHERE id = $3", [row.provider, row.provider_id, row.id]);
+      }
     }
   }
-  return res.json(history);
+  return res.json(rows.map(toProgress));
 };
 
+const isRecordId = (id) => typeof id === "string" && /^[0-9a-f-]{36}$/i.test(id);
+
 const updateProgress = async (req, res) => {
-  if (!mongoose.isValidObjectId(req.params.id)) {
-    return res.status(400).json({ message: "Invalid media record." });
-  }
-
+  if (!isRecordId(req.params.id)) return res.status(400).json({ message: "Invalid media record." });
   const media = validMedia(req.body);
-  if (!media) {
-    return res.status(400).json({ message: "Please provide valid media details." });
-  }
-
-  const metadata = validMetadata(req.body);
-  const existing = await WatchProgress.findOne({ _id: req.params.id, user: req.user._id });
+  if (!media) return res.status(400).json({ message: "Please provide valid media details." });
+  const { rows: previousRows } = await pool.query("SELECT * FROM watch_progress WHERE id = $1 AND user_id = $2", [req.params.id, req.user._id]);
+  const existing = previousRows[0];
   if (!existing) return res.status(404).json({ message: "Media record not found." });
-  const progress = await WatchProgress.findOneAndUpdate(
-    { _id: req.params.id, user: req.user._id },
-    { $set: { ...media, ...metadata, updatedAt: new Date().toISOString() } },
-    { new: true, runValidators: true }
-  );
 
+  const entries = Object.entries({ ...media, ...validMetadata(req.body) }).map(([key, value]) => [fieldColumns[key], dbValue(value)]);
+  const values = entries.map(([, value]) => value);
+  const sets = entries.map(([column], index) => `${column} = $${index + 1}`);
+  sets.push("updated_at = NOW()");
+  values.push(req.params.id, req.user._id);
+  const { rows } = await pool.query(`UPDATE watch_progress SET ${sets.join(", ")} WHERE id = $${values.length - 1} AND user_id = $${values.length} RETURNING *`, values);
+  const progress = rows[0];
   if (!progress) return res.status(404).json({ message: "Media record not found." });
-  if (progress.episode !== existing.episode || progress.currentTime > existing.currentTime) await logWatchEvent(progress, "progress");
+  if (progress.episode !== existing.episode || Number(progress.current_seconds) > Number(existing.current_seconds)) await logWatchEvent(progress, "progress");
   emitHistoryUpdated(req);
-  return res.json({ message: "Updated successfully", progress });
+  return res.json({ message: "Updated successfully", progress: toProgress(progress) });
 };
 
 const deleteProgress = async (req, res) => {
-  if (!mongoose.isValidObjectId(req.params.id)) {
-    return res.status(400).json({ message: "Invalid media record." });
-  }
-
-  const progress = await WatchProgress.findOneAndDelete({
-    _id: req.params.id,
-    user: req.user._id
-  });
-
-  if (!progress) return res.status(404).json({ message: "Media record not found." });
-  await WatchEvent.deleteMany({ progress: progress._id, user: req.user._id });
+  if (!isRecordId(req.params.id)) return res.status(400).json({ message: "Invalid media record." });
+  const { rows } = await pool.query("DELETE FROM watch_progress WHERE id = $1 AND user_id = $2 RETURNING id", [req.params.id, req.user._id]);
+  if (!rows[0]) return res.status(404).json({ message: "Media record not found." });
   emitHistoryUpdated(req);
   return res.json({ message: "Removed successfully" });
 };
 
 const getWatchEvents = async (req, res) => {
-  if (!mongoose.isValidObjectId(req.params.id)) return res.status(400).json({ message: "Invalid media record." });
-  const owned = await WatchProgress.exists({ _id: req.params.id, user: req.user._id });
-  if (!owned) return res.status(404).json({ message: "Media record not found." });
-  const events = await WatchEvent.find({ progress: req.params.id, user: req.user._id }).sort({ createdAt: -1 }).limit(100).lean();
-  return res.json(events);
+  if (!isRecordId(req.params.id)) return res.status(400).json({ message: "Invalid media record." });
+  const owned = await pool.query("SELECT id FROM watch_progress WHERE id = $1 AND user_id = $2", [req.params.id, req.user._id]);
+  if (!owned.rows[0]) return res.status(404).json({ message: "Media record not found." });
+  const { rows } = await pool.query("SELECT * FROM watch_events WHERE progress_id = $1 AND user_id = $2 ORDER BY created_at DESC LIMIT 100", [req.params.id, req.user._id]);
+  return res.json(rows.map(toEvent));
 };
 
 module.exports = { saveProgress, getProgress, updateProgress, deleteProgress, getWatchEvents, validMedia, validMetadata };

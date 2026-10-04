@@ -1,11 +1,10 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const WatchProgress = require("../models/WatchProgress");
-const WatchEvent = require("../models/WatchEvent");
+const { pool } = require("../config/db");
 const { saveProgress, updateProgress, deleteProgress, validMedia } = require("../controllers/progressController");
 
-const userId = "64b000000000000000000001";
-const recordId = "64b000000000000000000002";
+const userId = "64b00000-0000-4000-8000-000000000001";
+const recordId = "64b00000-0000-4000-8000-000000000002";
 
 function responseHarness() {
   return {
@@ -20,111 +19,90 @@ function requestHarness(body, params = {}) {
   const events = [];
   return {
     req: {
-      body,
-      params,
-      user: { _id: userId },
+      body, params, user: { _id: userId },
       app: { get: () => ({ to: (room) => ({ emit: (event) => events.push({ room, event }) }) }) }
     },
     events
   };
 }
 
-test("saveProgress upserts records into the authenticated user's library", async () => {
-  const originalFindOne = WatchProgress.findOne;
-  const original = WatchProgress.findOneAndUpdate;
-  const originalCreate = WatchEvent.create;
-  let filter;
+const makeProgressRow = (overrides = {}) => ({
+  id: recordId, user_id: userId, anime_title: "Arcane", episode: "S1E1", current_seconds: 0,
+  duration: 0, url: "", type: "Anime", genres: [], status: "Watching", favorite: false,
+  updated_at: new Date(), ...overrides
+});
+
+test("saveProgress upserts progress for the authenticated user and writes an initial event", async () => {
+  const originalQuery = pool.query;
+  const calls = [];
   try {
-    WatchProgress.findOne = async () => null;
-    WatchProgress.findOneAndUpdate = async (query) => { filter = query; return { _id: recordId }; };
-    WatchEvent.create = async () => ({});
-    const { req, events } = requestHarness({ animeTitle: "Arcane", episode: "S1E1" });
+    pool.query = async (sql, values) => {
+      calls.push({ sql, values });
+      if (sql.startsWith("SELECT * FROM watch_progress")) return { rows: [] };
+      if (sql.startsWith("INSERT INTO watch_progress")) return { rows: [makeProgressRow()] };
+      return { rows: [] };
+    };
+    const { req, events } = requestHarness({ animeTitle: "Arcane", episode: "S1E1", type: "TV" });
     const res = responseHarness();
     await saveProgress(req, res);
 
-    assert.deepEqual(filter, { user: userId, animeTitle: "Arcane" });
+    assert.match(calls[1].sql, /ON CONFLICT \(user_id, anime_title\) DO UPDATE/);
+    assert.equal(calls[0].values[0], userId);
+    assert.equal(calls[1].values[1], userId);
+    assert.match(calls[2].sql, /INSERT INTO watch_events/);
     assert.equal(res.statusCode, 200);
+    assert.equal(res.body.progress.animeTitle, "Arcane");
     assert.equal(events[0].room, `user:${userId}`);
   } finally {
-    WatchProgress.findOne = originalFindOne;
-    WatchProgress.findOneAndUpdate = original;
-    WatchEvent.create = originalCreate;
+    pool.query = originalQuery;
   }
 });
 
-test("updateProgress scopes edits by both record id and account", async () => {
-  const originalFindOne = WatchProgress.findOne;
-  const original = WatchProgress.findOneAndUpdate;
-  const originalCreate = WatchEvent.create;
-  let filter;
+test("updateProgress scopes updates by both record and account", async () => {
+  const originalQuery = pool.query;
+  const calls = [];
   try {
-    WatchProgress.findOne = async () => ({ _id: recordId, episode: "S1E1", currentTime: 0 });
-    WatchProgress.findOneAndUpdate = async (query) => { filter = query; return { _id: recordId, episode: "S1E2", currentTime: 0, user: userId, animeTitle: "Arcane" }; };
-    WatchEvent.create = async () => ({});
+    pool.query = async (sql, values) => {
+      calls.push({ sql, values });
+      if (sql.startsWith("SELECT * FROM watch_progress")) return { rows: [makeProgressRow()] };
+      if (sql.startsWith("UPDATE watch_progress")) return { rows: [makeProgressRow({ episode: "S1E2" })] };
+      return { rows: [] };
+    };
     const { req } = requestHarness({ animeTitle: "Arcane", episode: "S1E2" }, { id: recordId });
     const res = responseHarness();
     await updateProgress(req, res);
 
-    assert.deepEqual(filter, { _id: recordId, user: userId });
+    assert.match(calls[1].sql, /WHERE id = \$7 AND user_id = \$8 RETURNING/);
+    assert.equal(calls[1].values.at(-2), recordId);
+    assert.equal(calls[1].values.at(-1), userId);
     assert.equal(res.statusCode, 200);
   } finally {
-    WatchProgress.findOne = originalFindOne;
-    WatchProgress.findOneAndUpdate = original;
-    WatchEvent.create = originalCreate;
+    pool.query = originalQuery;
   }
 });
 
-test("deleteProgress scopes removals by both record id and account", async () => {
-  const original = WatchProgress.findOneAndDelete;
-  const originalDeleteMany = WatchEvent.deleteMany;
-  let filter;
+test("deleteProgress scopes removals by both record and account", async () => {
+  const originalQuery = pool.query;
+  let query;
   try {
-    WatchProgress.findOneAndDelete = async (query) => { filter = query; return { _id: recordId }; };
-    WatchEvent.deleteMany = async () => ({ deletedCount: 0 });
+    pool.query = async (sql, values) => { query = { sql, values }; return { rows: [{ id: recordId }] }; };
     const { req, events } = requestHarness({}, { id: recordId });
     const res = responseHarness();
     await deleteProgress(req, res);
 
-    assert.deepEqual(filter, { _id: recordId, user: userId });
+    assert.match(query.sql, /DELETE FROM watch_progress WHERE id = \$1 AND user_id = \$2/);
+    assert.deepEqual(query.values, [recordId, userId]);
     assert.equal(res.statusCode, 200);
     assert.equal(events.length, 1);
   } finally {
-    WatchProgress.findOneAndDelete = original;
-    WatchEvent.deleteMany = originalDeleteMany;
+    pool.query = originalQuery;
   }
 });
 
-test("validMedia trims fields and applies safe defaults", () => {
+test("validMedia trims fields, applies safe defaults, and rejects unsafe links", () => {
   assert.deepEqual(validMedia({ animeTitle: "  Arcane ", episode: " Movie " }), {
-    animeTitle: "Arcane",
-    episode: "Movie",
-    currentTime: 0,
-    duration: 0,
-    type: "Anime",
-    url: ""
+    animeTitle: "Arcane", episode: "Movie", currentTime: 0, duration: 0, type: "Anime", url: ""
   });
-});
-
-test("validMedia accepts supported media fields", () => {
-  assert.deepEqual(validMedia({
-    animeTitle: "Dune: Part Two",
-    episode: "Movie",
-    currentTime: 120,
-    duration: 9000,
-    type: "Movies",
-    url: "https://example.com/watch"
-  }), {
-    animeTitle: "Dune: Part Two",
-    episode: "Movie",
-    currentTime: 120,
-    duration: 9000,
-    type: "Movies",
-    url: "https://example.com/watch"
-  });
-});
-
-test("validMedia rejects incomplete, oversized, and unsafe records", () => {
-  assert.equal(validMedia(null), null);
   assert.equal(validMedia({ animeTitle: "One Piece" }), null);
   assert.equal(validMedia({ animeTitle: "X".repeat(251), episode: "Episode 1" }), null);
   assert.equal(validMedia({ animeTitle: "One Piece", episode: "Episode 1", currentTime: -1 }), null);

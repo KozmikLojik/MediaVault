@@ -1,13 +1,12 @@
 const express = require("express");
 const cors = require("cors");
 const http = require("http");
-const mongoose = require("mongoose");
 const { Server } = require("socket.io");
 const jwt = require("jsonwebtoken");
 
 require("dotenv").config();
 
-const connectDB = require("./config/db");
+const { pool, initializeDatabase } = require("./config/db");
 
 const app = express();
 const server = http.createServer(app);
@@ -64,12 +63,13 @@ app.use((_req, res, next) => {
   next();
 });
 
-app.get("/health", (_req, res) => {
-  const connected = mongoose.connection.readyState === 1;
-  res.status(connected ? 200 : 503).json({
-    status: connected ? "ok" : "database unavailable",
-    database: connected ? "connected" : "disconnected"
-  });
+app.get("/health", async (_req, res) => {
+  try {
+    await pool.query("SELECT 1");
+    return res.json({ status: "ok", database: "connected" });
+  } catch {
+    return res.status(503).json({ status: "database unavailable", database: "disconnected" });
+  }
 });
 
 app.use("/api/auth", require("./routes/authRoutes"));
@@ -83,13 +83,13 @@ app.use((error, _req, res, _next) => {
   if (error.type === "entity.too.large") {
     return res.status(413).json({ message: "Request body is too large." });
   }
-  if (error.code === 11000) {
+  if (error.code === "23505") {
     return res.status(409).json({ message: "A title with that name is already in your library." });
   }
-  if (error.name === "ValidationError" || error.name === "CastError") {
+  if (error.name === "ValidationError" || error.name === "CastError" || error.code === "22P02" || error.code === "23514") {
     return res.status(400).json({ message: "Some of the provided details are invalid." });
   }
-  if (error.name === "MongooseServerSelectionError" || error.name === "MongoNetworkError") {
+  if (["ECONNREFUSED", "ETIMEDOUT", "ENOTFOUND", "57P01"].includes(error.code)) {
     return res.status(503).json({ message: "The database is temporarily unavailable. Try again shortly." });
   }
   if (error.message === "Origin is not allowed by CORS") {
@@ -104,7 +104,7 @@ const start = async () => {
     throw new Error("JWT_SECRET must be set to a random value of at least 32 characters.");
   }
 
-  await connectDB();
+  await initializeDatabase();
   const port = Number(process.env.PORT) || 5000;
   server.listen(port, "0.0.0.0", () => {
     console.log(`MediaVault API listening on port ${port}`);
@@ -114,7 +114,7 @@ const start = async () => {
 const shutdown = (signal) => {
   console.log(`${signal} received; closing MediaVault API`);
   io.close(() => {
-    mongoose.disconnect().finally(() => process.exit(0));
+    pool.end().finally(() => process.exit(0));
   });
 };
 
@@ -123,11 +123,8 @@ process.once("SIGINT", () => shutdown("SIGINT"));
 
 start().catch((error) => {
   console.error(`Startup failed: ${error.message}`);
-  if (error.code === "ENOTFOUND") {
-    console.error("Check the Atlas hostname in MONGO_URI and verify the cluster still exists.");
-  } else if (error.code === "ECONNREFUSED" || error.code === "ETIMEDOUT") {
-    console.error("Check Atlas network access and allow the Render service to connect.");
-  }
+  if (error.code === "ENOTFOUND") console.error("Check the PostgreSQL hostname in DATABASE_URL.");
+  if (error.code === "ECONNREFUSED" || error.code === "ETIMEDOUT") console.error("Check that the PostgreSQL service is running and reachable.");
   process.exitCode = 1;
   server.close();
 });

@@ -115,12 +115,14 @@ The PostgreSQL database starts with an empty schema. Existing records in the una
 * Supports AniDoor, VidNest, HiAnime, Crunchyroll, AnimePahe, and YouTube
 * Restores the saved position for the same title and episode
 
+Playback capture supports Netflix, Crunchyroll, YouTube, Bilibili, AnimePahe, and the additional anime sites Re:Anime, Anikoto, Miruro, MKissa, AniZone, Senshi, KickAssAnime, Aniwaves, Anime Nexus, AniSnatch, ani.pm, AnimeOnsen, Shiro, AnimeX, AnimeStream, and Anify. It reads the page's visible title/episode labels and standard HTML video playback position; service page changes can affect title detection. It does not inspect DRM internals.
+
 #### Install the unpacked extension
 
 1. Open `chrome://extensions` in Chrome or `opera://extensions` in Opera.
 2. Turn on **Developer mode**.
 3. Choose **Load unpacked** and select the repository's `extension` folder.
-4. Open a supported site, start a video, and sign in from the MediaVault extension popup to sync progress.
+4. Open a supported site, start a video, and sign in from the MediaVault extension popup to sync progress. After updating the unpacked extension, reload it from the extensions page and grant its updated site access when prompted.
 
 Progress remains in browser storage while signed out or while the backend is unavailable. The extension requests access to supported streaming sites and the MediaVault API.
 

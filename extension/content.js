@@ -24,13 +24,22 @@
 
   function cleanTitle(value) {
     return String(value || "")
-      .replace(/\s*[|—–-]\s*(watch|stream|online|hianime|anidoor|vidnest|crunchyroll).*$/i, "")
+      .replace(/\s*[|—–-]\s*(watch|stream|online|hianime|anidoor|vidnest|crunchyroll|netflix).*$/i, "")
       .replace(/\s+/g, " ")
       .trim();
   }
 
+  function getNetflixDocumentParts() {
+    if (site.mediaType !== "Netflix") return [];
+    return cleanTitle(document.title).split(/\s+[|—–]\s+/).map((part) => part.trim()).filter(Boolean);
+  }
+
   function getTitle() {
+    const netflixPageTitle = site.mediaType === "Netflix"
+      ? getNetflixDocumentParts().at(-1)
+      : "";
     const candidates = [
+      netflixPageTitle,
       readText(site.title),
       readText(".anime-title"),
       readText(".film-name"),
@@ -41,7 +50,7 @@
 
     for (const candidate of candidates) {
       const title = cleanTitle(candidate);
-      if (title && !/^(watch|home|anime|video|player|unknown)$/i.test(title)) {
+      if (title && !/^(watch|home|anime|video|player|unknown|netflix)$/i.test(title)) {
         return title;
       }
     }
@@ -55,8 +64,17 @@
       readText("[class*='episode-title']") ||
       readText("[data-episode-title]");
 
-    if (candidate) return candidate;
-    return site.episode === null ? "Video" : "";
+    if (candidate && candidate.toLowerCase() !== getTitle().toLowerCase()) return candidate;
+    if (site.mediaType === "Netflix") return getNetflixDocumentParts()[0] || "Movie";
+    if (site.episode === null) return "Video";
+    return site.episodeFallback || "";
+  }
+
+  function getMediaType(episode) {
+    if (site.mediaType !== "Netflix") return site.mediaType || "Anime";
+    return getNetflixDocumentParts().length > 1 || /(?:s\s*\d+\s*[:· -]?\s*e\s*\d+|season\s+\d+|episode\s+\d+)/i.test(episode)
+      ? "TV"
+      : "Movies";
   }
 
   function getPageUrl() {
@@ -71,7 +89,9 @@
     const animeTitle = getTitle();
     const episode = getEpisode();
     if (!animeTitle || !episode) return null;
-    return { animeTitle, episode, url: getPageUrl() };
+    const safeTitle = animeTitle.slice(0, 250);
+    const safeEpisode = episode.slice(0, 160);
+    return { animeTitle: safeTitle, episode: safeEpisode, type: getMediaType(safeEpisode), url: getPageUrl() };
   }
 
   function contextKey(context) {
@@ -212,7 +232,7 @@
     lastSavedTime = currentTime;
     const rawDuration = Number(video.duration);
     const data = {
-      type: "Anime",
+      type: context.type || "Anime",
       animeTitle: context.animeTitle,
       episode: context.episode,
       currentTime,
@@ -283,7 +303,12 @@
       }, 250);
     });
     observer.observe(document.documentElement, { childList: true, subtree: true });
-    window.setInterval(syncContext, 2000);
+    let lastObservedUrl = window.location.href;
+    window.setInterval(() => {
+      if (window.location.href === lastObservedUrl) return;
+      lastObservedUrl = window.location.href;
+      syncContext();
+    }, 1500);
   } else {
     startVideoTracking();
   }

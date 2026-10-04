@@ -6,7 +6,26 @@ const SUPPORTED_HOSTS = [
   "hianime.to",
   "crunchyroll.com",
   "animepahe.ru",
-  "youtube.com"
+  "youtube.com",
+  "netflix.com",
+  "reanime.to",
+  "anikototv.to",
+  "miruro.to",
+  "mkissa.to",
+  "anizone.to",
+  "senshi.to",
+  "kaa.to",
+  "aniwaves.ru",
+  "animenexus.tv",
+  "bilibili.tv",
+  "bilibili.com",
+  "anisnatch.to",
+  "ani.pm",
+  "animeonsen.xyz",
+  "shiro.so",
+  "animex.one",
+  "anime.uniquestream.net",
+  "anify.to"
 ];
 
 function isSupportedHost(hostname) {

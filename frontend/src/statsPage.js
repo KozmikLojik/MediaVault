@@ -5,7 +5,6 @@ import "./style.css";
 import "./redesign.css";
 import { initThemePicker } from "./services/theme.js";
 import {
-  requireAuth,
   fetchWithAuth,
   initNavAuth,
   getToken
@@ -22,16 +21,17 @@ import {
   calculateLongestStreak
 } from "./stats.js";
 
-if (!requireAuth()) {
-  throw new Error("Redirecting to login");
-}
-
 initNavAuth();
 initThemePicker();
+const publicPreview = !getToken();
+if (publicPreview) {
+  const previewBanner = document.getElementById("public-preview-banner");
+  if (previewBanner) previewBanner.hidden = false;
+  const kicker = document.querySelector(".stats-header .section-kicker");
+  if (kicker) kicker.textContent = "PUBLIC PREVIEW · EXAMPLE DATA";
+}
 
-const socket = io(config.API_URL, {
-  auth: { token: getToken() }
-});
+const socket = getToken() ? io(config.API_URL, { auth: { token: getToken() } }) : null;
 
 const loader =
   document.getElementById("loader");
@@ -280,6 +280,19 @@ async function loadStats() {
 
   errorMessage.style.display = "none";
 
+  if (publicPreview) {
+    const now = new Date();
+    const sample = [
+      { animeTitle: "Frieren: Beyond Journey's End", episode: "Episode 12", currentTime: 7200, duration: 10000, updatedAt: now.toISOString() },
+      { animeTitle: "Interstellar", episode: "Movie", currentTime: 6200, duration: 10140, updatedAt: new Date(now - 86400000).toISOString() },
+      { animeTitle: "Breaking Bad", episode: "S2E4", currentTime: 8600, duration: 18000, updatedAt: new Date(now - 2 * 86400000).toISOString() },
+      { animeTitle: "Peaky Blinders", episode: "S1E3", currentTime: 5100, duration: 14000, updatedAt: new Date(now - 3 * 86400000).toISOString() }
+    ];
+    renderStats(sample);
+    loader.style.display = "none";
+    return;
+  }
+
   try {
 
     const response =
@@ -322,7 +335,7 @@ loadStats();
 
 let reloadTimeout;
 
-socket.on(
+socket?.on(
   "history-updated",
   () => {
 

@@ -83,19 +83,15 @@ export async function fetchWithAuth(
   try {
     response = await fetch(url, { ...options, headers });
   } catch {
-    throw new Error("MediaVault could not reach the API. Check your connection and try again.");
+    throw new Error("MediaVault could not reach the API. Your data is safe; public browsing is still available from Home.");
   }
 
   if (response.status === 401) {
-
-    logout();
-
-    window.location.href =
-      "/login.html";
-
-    throw new Error(
-      "Unauthorized"
-    );
+    if (getToken()) {
+      logout();
+      window.location.href = "/login.html";
+      throw new Error("Your session expired. Please sign in again.");
+    }
 
   }
 
@@ -114,12 +110,20 @@ export function initNavAuth() {
     document.getElementById(
       "logout-btn"
     );
+  const loginLink = document.getElementById("login-link");
+  const registerLink = document.getElementById("register-link");
 
   if (user) {
     userElements.forEach((element) => {
       element.textContent = user.username;
     });
   }
+
+  const signedIn = Boolean(getToken());
+  if (loginLink) loginLink.hidden = signedIn;
+  if (registerLink) registerLink.hidden = signedIn;
+  if (logoutBtn) logoutBtn.hidden = !signedIn;
+  userElements.forEach((element) => { element.hidden = !user; });
 
   if (logoutBtn) {
 
@@ -160,7 +164,7 @@ export async function loginUser(
       })
     });
   } catch {
-    throw new Error("MediaVault could not reach the API. Check your connection and try again.");
+    throw new Error("The sign-in service is unavailable right now. You can still browse the public preview from Home.");
   }
 
   const data = await response.json().catch(() => ({}));
@@ -199,7 +203,7 @@ export async function registerUser(
       })
     });
   } catch {
-    throw new Error("MediaVault could not reach the API. Check your connection and try again.");
+    throw new Error("The sign-up service is unavailable right now. You can still browse the public preview from Home.");
   }
 
   const data = await response.json().catch(() => ({}));

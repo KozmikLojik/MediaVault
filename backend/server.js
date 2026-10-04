@@ -74,6 +74,7 @@ app.get("/health", (_req, res) => {
 
 app.use("/api/auth", require("./routes/authRoutes"));
 app.use("/api/progress", require("./routes/progressRoutes"));
+app.use("/api/recommendations", require("./routes/recommendationRoutes"));
 
 app.use((error, _req, res, _next) => {
   if (error instanceof SyntaxError && error.status === 400 && "body" in error) {

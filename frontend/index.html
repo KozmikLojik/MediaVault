@@ -125,6 +125,8 @@
       <span>GitHub</span>
       <span class="nav-indicator"></span>
     </a>
+    <a class="nav-item" href="/login.html" id="login-link">Login</a>
+    <a class="nav-item" href="/register.html" id="register-link">Sign up</a>
   </div>
   <div class="nav-glow"></div>
 </nav>
@@ -141,6 +143,11 @@
 
 <!-- ===== MAIN CONTENT ===== -->
 <div class="page-container">
+
+  <aside class="public-preview-banner" id="public-preview-banner" hidden>
+    <span><strong>Public preview</strong> · Explore sample titles and features. Sign in to sync your own watch history.</span>
+    <a href="/register.html">Create an account</a>
+  </aside>
 
   <!-- BENTO DASHBOARD: HERO + SIDEBAR -->
   <header class="bento-dashboard">
@@ -438,6 +445,15 @@
       <button class="filter-btn" type="button" aria-pressed="false">K-Drama</button>
     </section>
 
+    <div class="library-toolbar">
+      <label>Status<select id="status-filter" aria-label="Filter by status"><option>All statuses</option><option>Plan to watch</option><option>Watching</option><option>Completed</option><option>Paused</option><option>Dropped</option></select></label>
+      <label>Sort by<select id="library-sort" aria-label="Sort library"><option value="updated">Recently updated</option><option value="rating">Highest rating</option><option value="title">Title A–Z</option></select></label>
+    </div>
+    <section class="recommendation-panel" aria-labelledby="recommendation-title">
+      <div class="recommendation-heading"><div><p class="section-kicker">BASED ON YOUR TASTE</p><h3 id="recommendation-title">Picked for you</h3></div><button id="refresh-recommendations" type="button">Refresh</button></div>
+      <div id="recommendations-list" class="recommendations-list" aria-live="polite"><p>Finding picks from your library…</p></div>
+    </section>
+
     <section id="anime-list"></section>
   </section>
 
@@ -538,6 +554,15 @@
       <label>Runtime (seconds)<input id="media-duration" name="duration" type="number" min="0" max="86400" value="0" required /></label>
     </div>
     <label>Watch link <span class="optional-label">(optional)</span><input id="media-url" name="url" type="url" maxlength="2048" placeholder="https://" /></label>
+    <div class="media-form-row">
+      <label>Library status<select id="media-status" name="status"><option>Plan to watch</option><option>Watching</option><option>Completed</option><option>Paused</option><option>Dropped</option></select></label>
+      <label>Your rating<select id="media-rating" name="rating"><option value="">Not rated</option><option value="10">10 · Masterpiece</option><option value="9">9 · Excellent</option><option value="8">8 · Great</option><option value="7">7 · Good</option><option value="6">6 · Fine</option><option value="5">5 · Average</option><option value="4">4 · Below average</option><option value="3">3 · Poor</option><option value="2">2 · Bad</option><option value="1">1 · Awful</option><option value="0">0</option></select></label>
+    </div>
+    <label>Genres <span class="optional-label">(comma separated)</span><input id="media-genres" maxlength="400" placeholder="Drama, Sci-Fi" /></label>
+    <div class="media-form-row"><label>Release year<input id="media-year" type="number" min="1888" max="2200" /></label><label>Format<input id="media-format" maxlength="60" placeholder="Movie, TV series" /></label></div>
+    <label>Synopsis <textarea id="media-synopsis" maxlength="1600" rows="3"></textarea></label>
+    <label>Notes <textarea id="media-notes" maxlength="1000" rows="2" placeholder="What did you think?"></textarea></label>
+    <label class="media-favorite"><input id="media-favorite" type="checkbox" /> Favorite</label>
     <p id="media-form-error" class="media-form-error" role="alert" aria-live="polite"></p>
     <div class="media-form-actions">
       <button type="button" class="media-form-cancel" id="media-form-cancel">Cancel</button>

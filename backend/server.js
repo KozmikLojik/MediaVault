@@ -24,7 +24,7 @@ const allowedOrigins = [
 const isAllowedOrigin = (origin) =>
   !origin ||
   allowedOrigins.includes(origin) ||
-  origin.startsWith("chrome-extension://");
+  /^chrome-extension:\/\/[a-p]{32}$/i.test(origin);
 
 const corsOptions = {
   origin(origin, callback) {

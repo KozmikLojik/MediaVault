@@ -66,11 +66,13 @@
 
     if (candidate && candidate.toLowerCase() !== getTitle().toLowerCase()) return candidate;
     if (site.mediaType === "Netflix") return getNetflixDocumentParts()[0] || "Movie";
+    if (site.mediaType === "Western") return "Movie";
     if (site.episode === null) return "Video";
     return site.episodeFallback || "";
   }
 
   function getMediaType(episode) {
+    if (site.mediaType === "Western") return episode === "Movie" ? "Movies" : "TV";
     if (site.mediaType !== "Netflix") return site.mediaType || "Anime";
     return getNetflixDocumentParts().length > 1 || /(?:s\s*\d+\s*[:· -]?\s*e\s*\d+|season\s+\d+|episode\s+\d+)/i.test(episode)
       ? "TV"

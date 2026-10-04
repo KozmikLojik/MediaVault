@@ -6,6 +6,13 @@ const animeSite = (overrides = {}) => ({
   episodeFallback: "Episode",
   ...overrides
 });
+const westernSite = () => ({
+  title: "h1, [itemprop='name'], [class*='movie-title'], [class*='film-title'], [class*='title']",
+  episode: ".episode-title, [class*='episode-title'], [data-testid*='episode']",
+  video: "video",
+  mediaType: "Western",
+  episodeFallback: "Movie"
+});
 
 const SUPPORTED_SITES = Object.freeze({
   "anidoor.me": animeSite({ title: ".anime-title, .film-name, h1" }),
@@ -31,6 +38,25 @@ const SUPPORTED_SITES = Object.freeze({
   "animex.one": animeSite(),
   "anime.uniquestream.net": animeSite(),
   "anify.to": animeSite(),
+  "shuttletv.pk": westernSite(),
+  "shuttletv.su": westernSite(),
+  "hydrahd.com": westernSite(),
+  "hydrahd.me": westernSite(),
+  "hydrahd.ru": westernSite(),
+  "hydrahd.ws": westernSite(),
+  "atlantic.st": westernSite(),
+  "bingr.one": westernSite(),
+  "m4uhd.to": westernSite(),
+  "cinemaos.live": westernSite(),
+  "rivestream.app": westernSite(),
+  "rivestream.ru": westernSite(),
+  "rivestream.vip": westernSite(),
+  "watchroo.com": westernSite(),
+  "vidbox.cc": westernSite(),
+  "nepu.io": westernSite(),
+  "nepu.is": westernSite(),
+  "flixer.su": westernSite(),
+  "hexa.su": westernSite(),
   "youtube.com": animeSite({
     title: "h1.ytd-watch-metadata, h1",
     episode: null,

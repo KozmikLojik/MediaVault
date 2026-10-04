@@ -58,7 +58,7 @@ const saveProgress = async (req, res) => {
   if (!media) return res.status(400).json({ message: "Enter a title and episode, and use valid progress values and an http(s) link." });
 
   const metadata = validMetadata(req.body);
-  const { rows: previousRows } = await pool.query("SELECT * FROM watch_progress WHERE user_id = $1 AND anime_title = $2", [req.user._id, media.animeTitle]);
+  const { rows: previousRows } = await pool.query("SELECT * FROM watch_progress WHERE user_id = $1 AND anime_title = $2 AND type = $3", [req.user._id, media.animeTitle, media.type]);
   const existing = previousRows[0];
   const changedEpisode = existing && existing.episode !== media.episode;
   const checkpointDue = !existing || !existing.last_history_checkpoint_time || Date.now() - Number(existing.last_history_checkpoint_time) >= 5 * 60 * 1000 || changedEpisode;
@@ -76,7 +76,7 @@ const saveProgress = async (req, res) => {
   const placeholders = values.map((_, index) => `$${index + 1}`);
   const updates = entries.map(([column]) => `${column} = EXCLUDED.${column}`);
   updates.push("updated_at = NOW()");
-  const sql = `INSERT INTO watch_progress (${columns.join(", ")}) VALUES (${placeholders.join(", ")}) ON CONFLICT (user_id, anime_title) DO UPDATE SET ${updates.join(", ")} RETURNING *`;
+  const sql = `INSERT INTO watch_progress (${columns.join(", ")}) VALUES (${placeholders.join(", ")}) ON CONFLICT (user_id, anime_title, type) DO UPDATE SET ${updates.join(", ")} RETURNING *`;
   const { rows } = await pool.query(sql, values);
   const progress = rows[0];
   if (checkpointDue && (!existing || changedEpisode || media.currentTime > Number(existing.current_seconds || 0))) {
@@ -84,6 +84,57 @@ const saveProgress = async (req, res) => {
   }
   emitHistoryUpdated(req);
   return res.json({ message: "Saved successfully", progress: toProgress(progress) });
+};
+
+const importProgress = async (req, res) => {
+  const items = req.body?.items;
+  if (!Array.isArray(items) || items.length < 1 || items.length > 100) {
+    return res.status(400).json({ message: "Import between 1 and 100 titles at a time." });
+  }
+  const prepared = items.map((item) => {
+    const media = validMedia(item);
+    return media ? { media, metadata: validMetadata(item) } : null;
+  });
+  if (prepared.some((item) => !item)) return res.status(400).json({ message: "One or more imported titles have invalid details." });
+
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    for (const { media, metadata } of prepared) {
+      const fields = { ...media, ...metadata };
+      await client.query(
+        `INSERT INTO watch_progress
+          (id, user_id, anime_title, episode, current_seconds, duration, url, type, provider, provider_id, genres, release_year, format, synopsis, status, rating, favorite, notes)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11::jsonb, $12, $13, $14, $15, $16, $17, $18)
+         ON CONFLICT (user_id, anime_title, type) DO UPDATE SET
+          episode = EXCLUDED.episode,
+          type = EXCLUDED.type,
+          provider = EXCLUDED.provider,
+          provider_id = CASE WHEN EXCLUDED.provider_id <> '' THEN EXCLUDED.provider_id ELSE watch_progress.provider_id END,
+          genres = CASE WHEN EXCLUDED.genres <> '[]'::jsonb THEN EXCLUDED.genres ELSE watch_progress.genres END,
+          release_year = COALESCE(EXCLUDED.release_year, watch_progress.release_year),
+          format = COALESCE(NULLIF(EXCLUDED.format, ''), watch_progress.format),
+          synopsis = COALESCE(NULLIF(EXCLUDED.synopsis, ''), watch_progress.synopsis),
+          status = EXCLUDED.status,
+          rating = COALESCE(EXCLUDED.rating, watch_progress.rating),
+          updated_at = NOW()`,
+        [
+          randomUUID(), req.user._id, media.animeTitle, media.episode, media.currentTime, media.duration, media.url, media.type,
+          fields.provider || "import", fields.providerId || "", JSON.stringify(fields.genres || []), fields.releaseYear ?? null,
+          fields.format || "", fields.synopsis || "", fields.status || "Plan to watch", fields.rating ?? null,
+          fields.favorite === true, fields.notes || ""
+        ]
+      );
+    }
+    await client.query("COMMIT");
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+  emitHistoryUpdated(req);
+  return res.json({ message: "List imported successfully.", imported: prepared.length });
 };
 
 const getProgress = async (req, res) => {
@@ -149,4 +200,4 @@ const getWatchEvents = async (req, res) => {
   return res.json(rows.map(toEvent));
 };
 
-module.exports = { saveProgress, getProgress, updateProgress, deleteProgress, getWatchEvents, validMedia, validMetadata };
+module.exports = { saveProgress, importProgress, getProgress, updateProgress, deleteProgress, getWatchEvents, validMedia, validMetadata };

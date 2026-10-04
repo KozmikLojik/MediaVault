@@ -25,7 +25,12 @@ const SUPPORTED_HOSTS = [
   "shiro.so",
   "animex.one",
   "anime.uniquestream.net",
-  "anify.to"
+  "anify.to",
+  "shuttletv.pk", "shuttletv.su",
+  "hydrahd.com", "hydrahd.me", "hydrahd.ru", "hydrahd.ws",
+  "atlantic.st", "bingr.one", "m4uhd.to", "cinemaos.live",
+  "rivestream.app", "rivestream.ru", "rivestream.vip", "watchroo.com",
+  "vidbox.cc", "nepu.io", "nepu.is", "flixer.su", "hexa.su"
 ];
 
 function isSupportedHost(hostname) {

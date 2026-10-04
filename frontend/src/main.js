@@ -12,6 +12,7 @@ import {
   initNavAuth,
   getToken
 } from "./services/api";
+import { parseListExport } from "./services/listImport.js";
 
 initNavAuth();
 const isPublicPreview = !getToken();
@@ -363,7 +364,9 @@ async function calculateFavoriteGenre(data) {
   if (!data || !data.length) return "None";
   const genreCounts = {};
   for (const anime of data) {
-    const details = anime.genres?.length ? { genres: anime.genres } : await getAnimeDetails(anime.animeTitle);
+    const details = anime.genres?.length
+      ? { genres: anime.genres }
+      : anime.type === "Anime" && anime.provider !== "import" ? await getAnimeDetails(anime.animeTitle) : { genres: [] };
     if (details && details.genres) {
       details.genres.forEach(genre => {
         genreCounts[genre] = (genreCounts[genre] || 0) + 1;
@@ -473,7 +476,10 @@ async function renderAnime(data) {
       const featured = featuredMedia.find((item) => item.title === anime.animeTitle);
       return { anime, details: { poster: featured?.poster || "", genres: featured?.genres || [], featured } };
     }
-    return { anime, details: { ...(await getAnimeDetails(anime.animeTitle)), ...(anime.genres?.length ? { genres: anime.genres } : {}) } };
+    if (anime.type === "Anime" && anime.provider !== "import") {
+      return { anime, details: { ...(await getAnimeDetails(anime.animeTitle)), ...(anime.genres?.length ? { genres: anime.genres } : {}) } };
+    }
+    return { anime, details: { poster: "/poster-fallback.svg", genres: anime.genres || [] } };
   }));
 
   const fragment = document.createDocumentFragment();
@@ -682,13 +688,13 @@ async function renderContinueWatching() {
   const container = document.getElementById("continue-watching");
   if (!container) return;
 
-  const recent = allAnime.slice(0, 10);
+  const recent = allAnime.filter((item) => Number(item.currentTime) > 0 || Number(item.duration) > 0).slice(0, 10);
   const detailsResults = await Promise.all(recent.map(async (anime) => {
     if (isPublicPreview) {
       const item = featuredMedia.find((featured) => featured.title === anime.animeTitle);
       return { anime, details: { poster: item?.poster || "/poster-fallback.svg" } };
     }
-    return { anime, details: await getAnimeDetails(anime.animeTitle) };
+    return { anime, details: anime.type === "Anime" ? await getAnimeDetails(anime.animeTitle) : { poster: "/poster-fallback.svg" } };
   }));
 
   const fragment = document.createDocumentFragment();
@@ -921,21 +927,23 @@ async function loadAnimeData() {
   await updateFeatured();
 
   const totalAnime = allAnime.length;
+  const playbackItems = allAnime.filter((item) => Number(item.currentTime) > 0 || Number(item.duration) > 0);
+  const episodeTitles = allAnime.filter((item) => ["Anime", "TV", "K-Drama"].includes(item.type) && /\d+/.test(item.episode || ""));
   const totalHours = parseFloat((
-    allAnime.reduce((sum, anime) => sum + (anime.currentTime || 0), 0) / 3600
+    playbackItems.reduce((sum, anime) => sum + (anime.currentTime || 0), 0) / 3600
   ).toFixed(1));
-  const totalEpisodes = allAnime.reduce((sum, anime) => sum + getEpisodeNumber(anime.episode), 0);
-  const currentStreak = calculateCurrentStreak(allAnime);
-  const averageCompletion = parseFloat((allAnime.length ? (
-    allAnime.reduce((sum, anime) => {
+  const totalEpisodes = episodeTitles.reduce((sum, anime) => sum + getEpisodeNumber(anime.episode), 0);
+  const currentStreak = calculateCurrentStreak(playbackItems);
+  const averageCompletion = parseFloat((playbackItems.length ? (
+    playbackItems.reduce((sum, anime) => {
       const duration = anime.duration || 1;
       return sum + Math.min(((anime.currentTime || 0) / duration) * 100, 100);
-    }, 0) / allAnime.length
+    }, 0) / playbackItems.length
   ) : 0).toFixed(1));
 
   const oneWeekAgo = new Date();
   oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-  const weeklyGoalVal = allAnime.filter(item => {
+  const weeklyGoalVal = playbackItems.filter(item => {
     if (!item.updatedAt) return false;
     return new Date(item.updatedAt) >= oneWeekAgo;
   }).length;
@@ -956,7 +964,7 @@ async function loadAnimeData() {
     goalText.textContent = `${totalEpisodes} / ${monthlyGoal} episodes`;
   }
 
-  const topAnime = [...allAnime].sort((a, b) => b.currentTime - a.currentTime)[0];
+  const topAnime = [...playbackItems].sort((a, b) => b.currentTime - a.currentTime)[0];
   const topAnimeEl = document.getElementById("top-anime");
   if (topAnimeEl) {
     topAnimeEl.innerText = topAnime ? topAnime.animeTitle : "-";
@@ -997,6 +1005,71 @@ document.getElementById("mylist-btn")?.addEventListener("click", () => {
 });
 document.getElementById("status-filter")?.addEventListener("change", refreshLibraryResults);
 document.getElementById("library-sort")?.addEventListener("change", refreshLibraryResults);
+const listImportFile = document.getElementById("list-import-file");
+const listImportSource = document.getElementById("list-import-source");
+const listImportStatus = document.getElementById("list-import-status");
+const listImportPreview = document.getElementById("list-import-preview");
+const listImportSubmit = document.getElementById("list-import-submit");
+const listImportForm = document.getElementById("list-import-form");
+const listImportAuth = document.getElementById("list-import-auth");
+let stagedListImport = [];
+if (isPublicPreview) {
+  if (listImportForm) listImportForm.hidden = true;
+  if (listImportAuth) listImportAuth.hidden = false;
+}
+
+async function previewTrackerExport() {
+  stagedListImport = [];
+  listImportPreview?.replaceChildren();
+  if (listImportPreview) listImportPreview.hidden = true;
+  if (listImportSubmit) listImportSubmit.disabled = true;
+  const file = listImportFile?.files?.[0];
+  if (!file || !listImportStatus) return;
+  listImportStatus.textContent = "Reading this file locally…";
+  try {
+    stagedListImport = await parseListExport(file, listImportSource?.value || "myanimelist");
+    if (listImportPreview) {
+      const items = stagedListImport.slice(0, 8).map((entry) => {
+        const item = document.createElement("li");
+        item.textContent = `${entry.animeTitle} · ${entry.type}`;
+        return item;
+      });
+      listImportPreview.replaceChildren(...items);
+      listImportPreview.hidden = false;
+    }
+    listImportStatus.textContent = `${stagedListImport.length} title${stagedListImport.length === 1 ? "" : "s"} ready. Previewing the first ${Math.min(stagedListImport.length, 8)}.`;
+    if (listImportSubmit) listImportSubmit.disabled = false;
+  } catch (error) {
+    listImportStatus.textContent = error.message || "Could not read this list export.";
+  }
+}
+
+listImportFile?.addEventListener("change", previewTrackerExport);
+listImportSource?.addEventListener("change", () => { if (listImportFile?.files?.[0]) previewTrackerExport(); });
+listImportSubmit?.addEventListener("click", async () => {
+  if (!stagedListImport.length) return;
+  listImportSubmit.disabled = true;
+  listImportSubmit.textContent = "Importing…";
+  if (listImportStatus) listImportStatus.textContent = "Saving your imported titles…";
+  try {
+    const response = await fetchWithAuth(`${config.API_URL}/api/progress/import`, {
+      method: "POST", body: JSON.stringify({ items: stagedListImport })
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(result.message || "Could not import this list.");
+    const imported = result.imported || stagedListImport.length;
+    stagedListImport = [];
+    if (listImportFile) listImportFile.value = "";
+    if (listImportPreview) { listImportPreview.replaceChildren(); listImportPreview.hidden = true; }
+    if (listImportStatus) listImportStatus.textContent = `Imported ${imported} titles into your library. Your source tracker was not changed.`;
+    await loadAnime();
+  } catch (error) {
+    if (listImportStatus) listImportStatus.textContent = error.message || "Import failed. Try again.";
+  } finally {
+    listImportSubmit.disabled = !stagedListImport.length;
+    listImportSubmit.textContent = "Import titles";
+  }
+});
 document.getElementById("media-form-close")?.addEventListener("click", () => mediaFormDialog.close());
 document.getElementById("media-form-cancel")?.addEventListener("click", () => mediaFormDialog.close());
 mediaFormDialog?.addEventListener("click", (event) => {

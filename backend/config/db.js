@@ -48,6 +48,8 @@ const initializeDatabase = async () => {
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       UNIQUE(user_id, anime_title)
     );
+    ALTER TABLE watch_progress DROP CONSTRAINT IF EXISTS watch_progress_user_id_anime_title_key;
+    CREATE UNIQUE INDEX IF NOT EXISTS watch_progress_user_title_type_uidx ON watch_progress(user_id, anime_title, type);
     CREATE INDEX IF NOT EXISTS watch_progress_user_updated_idx ON watch_progress(user_id, updated_at DESC);
     CREATE INDEX IF NOT EXISTS watch_progress_provider_idx ON watch_progress(user_id, provider, provider_id);
 

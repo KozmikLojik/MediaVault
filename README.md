@@ -31,6 +31,8 @@ Instantly search your watch history.
 
 Titles can be marked Plan to watch, Watching, Completed, Paused, or Dropped. Add ratings, favorites, personal notes, genres, release details, and sort or filter the collection.
 
+The Library can import one-way CSV, JSON, or XML list exports from MyAnimeList, AniList, MangaBaka, ComicK, Baka-Updates, AniDB, Kuroiru, MyFigureCollection, Visual Novel DB, VN Club, NoviList, NovelUpdates, RanobeDB, VocaDB, AnimePlanet, SIMKL, MyDramaList, Kenmei, VGMdb, Kitsu, Pornhwa Database, MyMangaIndex, konsumr, and MyWaifuList. Choose the source, preview the parsed titles, then confirm the import. No tracker password is requested; imports require a title/status/progress export format the parser recognizes.
+
 ### Watch history and recommendations
 
 The API records progress checkpoints and keeps them under the authenticated account. It provides explainable recommendations based on genres, media type, favorites, and ratings, with an optional AI mode for natural-language requests such as “a tense thriller under two hours.” Configure `OPENAI_API_KEY` on the backend to enable it; `OPENAI_MODEL` defaults to `gpt-5-mini`. Without a key, taste-based recommendations continue to work.
@@ -115,7 +117,7 @@ The PostgreSQL database starts with an empty schema. Existing records in the una
 * Supports AniDoor, VidNest, HiAnime, Crunchyroll, AnimePahe, and YouTube
 * Restores the saved position for the same title and episode
 
-Playback capture supports Netflix, Crunchyroll, YouTube, Bilibili, AnimePahe, and the additional anime sites Re:Anime, Anikoto, Miruro, MKissa, AniZone, Senshi, KickAssAnime, Aniwaves, Anime Nexus, AniSnatch, ani.pm, AnimeOnsen, Shiro, AnimeX, AnimeStream, and Anify. It reads the page's visible title/episode labels and standard HTML video playback position; service page changes can affect title detection. It does not inspect DRM internals.
+Playback capture supports Netflix, Crunchyroll, YouTube, Bilibili, AnimePahe, Re:Anime, Anikoto, Miruro, MKissa, AniZone, Senshi, KickAssAnime, Aniwaves, Anime Nexus, AniSnatch, ani.pm, AnimeOnsen, Shiro, AnimeX, AnimeStream, Anify, ShuttleTV, HydraHD, Atlantic, Bingr, M4uHD, Cinemaos, Rive, Watchroo, Vidbox, NEPU Stream, and Hexa Watch. It reads visible title/episode labels and standard HTML video playback position; service page changes can affect detection. It does not inspect DRM internals.
 
 #### Install the unpacked extension
 

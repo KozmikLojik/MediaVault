@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "MediaVault",
-  "version": "1.2.0",
-  "description": "Save and resume playback progress across Netflix, anime sites, and other supported video platforms.",
+  "version": "1.3.0",
+  "description": "Save and resume playback progress across Netflix, anime sites, and supported streaming platforms.",
   "permissions": [
     "storage"
   ],
@@ -33,7 +33,12 @@
     "https://*.shiro.so/*",
     "https://*.animex.one/*",
     "https://*.anime.uniquestream.net/*",
-    "https://*.anify.to/*"
+    "https://*.anify.to/*",
+    "https://*.shuttletv.pk/*", "https://*.shuttletv.su/*",
+    "https://*.hydrahd.com/*", "https://*.hydrahd.me/*", "https://*.hydrahd.ru/*", "https://*.hydrahd.ws/*",
+    "https://*.atlantic.st/*", "https://*.bingr.one/*", "https://*.m4uhd.to/*", "https://*.cinemaos.live/*",
+    "https://*.rivestream.app/*", "https://*.rivestream.ru/*", "https://*.rivestream.vip/*", "https://*.watchroo.com/*",
+    "https://*.vidbox.cc/*", "https://*.nepu.io/*", "https://*.nepu.is/*", "https://*.flixer.su/*", "https://*.hexa.su/*"
   ],
 
   "content_scripts": [
@@ -63,7 +68,12 @@
         "https://*.shiro.so/*",
         "https://*.animex.one/*",
         "https://*.anime.uniquestream.net/*",
-        "https://*.anify.to/*"
+        "https://*.anify.to/*",
+        "https://*.shuttletv.pk/*", "https://*.shuttletv.su/*",
+        "https://*.hydrahd.com/*", "https://*.hydrahd.me/*", "https://*.hydrahd.ru/*", "https://*.hydrahd.ws/*",
+        "https://*.atlantic.st/*", "https://*.bingr.one/*", "https://*.m4uhd.to/*", "https://*.cinemaos.live/*",
+        "https://*.rivestream.app/*", "https://*.rivestream.ru/*", "https://*.rivestream.vip/*", "https://*.watchroo.com/*",
+        "https://*.vidbox.cc/*", "https://*.nepu.io/*", "https://*.nepu.is/*", "https://*.flixer.su/*", "https://*.hexa.su/*"
       ],
       "js": ["sites.js", "content.js"],
       "all_frames": true,

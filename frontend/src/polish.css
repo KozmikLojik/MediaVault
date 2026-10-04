@@ -82,6 +82,19 @@ body {
 .filter-btn { border: 1px solid var(--surface-border); border-radius: 999px; background: transparent; color: #b6bcb9; font-weight: 600; }
 .filter-btn.active, .filter-btn[aria-pressed="true"] { border-color: rgba(129, 207, 196, .35); background: rgba(129, 207, 196, .12); color: #a8e4db; }
 .library-toolbar select { border: 1px solid var(--surface-border); border-radius: 9px; background: var(--surface-1); }
+.list-import { margin: 12px 0 18px; border: 1px solid var(--surface-border); border-radius: 12px; background: var(--surface-1); }
+.list-import summary { padding: 12px 14px; color: var(--surface-text); font-weight: 700; cursor: pointer; }
+.list-import-body { padding: 0 14px 14px; color: var(--surface-muted); font-size: .84rem; }
+.list-import-body a { color: var(--surface-accent); }
+.list-import-body > p:first-child { max-width: 82ch; line-height: 1.55; }
+.list-import-controls { display: flex; flex-wrap: wrap; gap: 12px; }
+.list-import-controls label { display: grid; gap: 6px; min-width: min(100%, 220px); color: var(--surface-text); font-size: .8rem; }
+.list-import-controls select, .list-import-controls input { min-height: 40px; padding: 7px 9px; border: 1px solid var(--surface-border); border-radius: 8px; background: #101315; color: var(--surface-text); }
+.list-import-status { min-height: 1em; }
+.list-import-preview { display: flex; flex-wrap: wrap; gap: 6px; padding: 0; margin: 8px 0; list-style: none; }
+.list-import-preview li { padding: 5px 9px; border: 1px solid var(--surface-border); border-radius: 999px; background: rgba(255,255,255,.04); font-size: .76rem; }
+.list-import-submit { min-height: 40px; padding: 8px 14px; border: 1px solid rgba(129,207,196,.3); border-radius: 9px; background: rgba(129,207,196,.13); color: #a8e4db; font-weight: 700; cursor: pointer; }
+.list-import-submit:disabled { opacity: .5; cursor: not-allowed; }
 .recommendation-panel { margin: 18px 0 22px; padding: 18px; border: 1px solid var(--surface-border); border-radius: 15px; background: var(--surface-1); }
 .recommendation-card { min-height: 140px; border-color: var(--surface-border); border-radius: 12px; background: #191d1f; }
 .recommendation-heading button, .recommendation-actions button { border-color: var(--surface-border); border-radius: 9px; background: #202527; }

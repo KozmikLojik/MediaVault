@@ -365,12 +365,36 @@
       <button class="filter-btn" type="button" aria-pressed="false">Movies</button>
       <button class="filter-btn" type="button" aria-pressed="false">TV</button>
       <button class="filter-btn" type="button" aria-pressed="false">K-Drama</button>
+      <button class="filter-btn" type="button" aria-pressed="false">Manga</button>
+      <button class="filter-btn" type="button" aria-pressed="false">Manhwa</button>
+      <button class="filter-btn" type="button" aria-pressed="false">Light Novel</button>
+      <button class="filter-btn" type="button" aria-pressed="false">Visual Novel</button>
+      <button class="filter-btn" type="button" aria-pressed="false">Music</button>
+      <button class="filter-btn" type="button" aria-pressed="false">Figure</button>
+      <button class="filter-btn" type="button" aria-pressed="false">Character</button>
+      <button class="filter-btn" type="button" aria-pressed="false">Media</button>
     </section>
 
     <div class="library-toolbar">
       <label>Status<select id="status-filter" aria-label="Filter by status"><option>All statuses</option><option>Plan to watch</option><option>Watching</option><option>Completed</option><option>Paused</option><option>Dropped</option></select></label>
       <label>Sort by<select id="library-sort" aria-label="Sort library"><option value="updated">Recently updated</option><option value="rating">Highest rating</option><option value="title">Title A–Z</option></select></label>
     </div>
+    <details id="list-import" class="list-import">
+      <summary>Import a tracker list</summary>
+      <div id="list-import-auth" class="list-import-body" hidden>Sign in to import a list into your account. <a href="/login.html">Sign in</a></div>
+      <div id="list-import-form" class="list-import-body">
+        <p>Import a CSV, JSON, or XML export from one of these trackers (up to 100 titles and 5 MB per import). The file is read in your browser; only the titles and list details you import are sent to MediaVault. This is a one-way import and does not change the source account.</p>
+        <div class="list-import-controls">
+          <label>Source<select id="list-import-source">
+            <option value="myanimelist">MyAnimeList</option><option value="anilist">AniList</option><option value="mangabaka">MangaBaka</option><option value="comicktracker">ComicK</option><option value="bakaupdates">Baka-Updates</option><option value="anidb">AniDB</option><option value="kuroiru">Kuroiru</option><option value="myfigurecollection">MyFigureCollection</option><option value="vndbwiki">Visual Novel DB</option><option value="vnclubdb">VN Club</option><option value="novilist">NoviList</option><option value="novelupdates">NovelUpdates</option><option value="ranobedb">RanobeDB</option><option value="vocadb">VocaDB</option><option value="animeplanet">AnimePlanet</option><option value="simkl">SIMKL</option><option value="mydramalist">MyDramaList</option><option value="kenmei">Kenmei</option><option value="vgmdb">VGMdb</option><option value="kitsu">Kitsu</option><option value="pornhwadb">Pornhwa Database</option><option value="mymangaindex">MyMangaIndex</option><option value="konsumr">konsumr</option><option value="mywaifulist">MyWaifuList</option>
+          </select></label>
+          <label>Export file<input id="list-import-file" type="file" accept=".csv,.json,.xml,text/csv,application/json,application/xml,text/xml" /></label>
+        </div>
+        <p id="list-import-status" class="list-import-status" role="status" aria-live="polite"></p>
+        <ul id="list-import-preview" class="list-import-preview" hidden></ul>
+        <button id="list-import-submit" class="list-import-submit" type="button" disabled>Import titles</button>
+      </div>
+    </details>
     <section class="recommendation-panel" aria-labelledby="recommendation-title">
       <div class="recommendation-heading"><div><p class="section-kicker">BASED ON YOUR TASTE</p><h3 id="recommendation-title">Picked for you</h3></div><button id="refresh-recommendations" type="button">Refresh</button></div>
       <form id="ai-recommendation-form" class="ai-recommendation-form">
@@ -439,7 +463,7 @@
     </div>
     <label>Title<input id="media-title" name="title" maxlength="250" required /></label>
     <div class="media-form-row">
-      <label>Type<select id="media-type" name="type"><option>Anime</option><option>Movies</option><option>TV</option><option>K-Drama</option></select></label>
+      <label>Type<select id="media-type" name="type"><option>Anime</option><option>Movies</option><option>TV</option><option>K-Drama</option><option>Manga</option><option>Manhwa</option><option>Light Novel</option><option>Visual Novel</option><option>Music</option><option>Figure</option><option>Character</option><option>Media</option></select></label>
       <label>Episode / status<input id="media-episode" name="episode" maxlength="160" required value="Episode 1" /></label>
     </div>
     <div class="media-form-row">
